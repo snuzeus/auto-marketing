@@ -1,0 +1,131 @@
+# config/personas.yaml
+version: "3.0"
+default_brand_voice: "트렌디하고 진정성 있는 크리에이터 시선"
+
+# 기본 실행 시 글을 생성 및 발행할 타겟 플랫폼 목록
+# 지원 플랫폼 식별자: "instagram", "x_twitter", "dcinside", "naver_cafe"
+active_channels:
+  - "instagram"
+  - "x_twitter"
+  - "dcinside"
+  - "naver_cafe"
+
+channels:
+  instagram:
+    enabled: true
+    vibe_level: "high_emotional"
+    line_break_frequency: "every_1_2_sentences"
+    emoji_density: "medium_high"
+    max_caption_length: 1200
+    hashtag_count:
+      min: 10
+      max: 15
+    image_constraints:
+      supported_ratios: ["1:1", "4:5", "1.91:1"]
+      preferred_ratio: "4:5"
+      auto_pad_if_invalid: true
+    style_guidelines:
+      - "첫 줄은 사진의 분위기를 직관적으로 요약하는 감각적인 한 문장으로 시작할 것"
+      - "스토리텔링형 여백(빈 줄)을 적극 활용하여 모바일 가독성을 극대화할 것"
+      - "마지막 문단에는 저장(Save)이나 댓글 소통을 유도하는 자연스러운 질문 배치"
+    forbidden_words:
+      - "최저가 보장"
+      - "지금 바로 클릭"
+      - "무조건 사세요"
+
+  x_twitter:
+    enabled: true
+    strict_char_limit: 280
+    safe_target_char_limit: 260
+    hook_style: "curiosity_or_contrarian"
+    cta_link_strategy: "reply_thread_or_bio"
+    hashtag_count:
+      min: 2
+      max: 3
+    style_guidelines:
+      - "첫 25자 이내에 스크롤을 멈추게 하는 강력한 후킹 문장을 배치할 것"
+      - "군더더기 수식어를 제거하고 단문 호흡으로 리듬감 있게 작성할 것"
+      - "본문 + 줄바꿈 + 다국어 핵심 해시태그 2~3개 조합이 총 280자를 절대 넘지 않을 것"
+    forbidden_words:
+      - "안녕하세요 여러분"
+      - "많은 관심 부탁드립니다"
+
+  dcinside:
+    enabled: true
+    default_gallery_id: "gadget"
+    sentence_endings:
+      - "~함"
+      - "~임"
+      - "~듯"
+      - "~음"
+      - "~냐?"
+    tone_style: "raw_honest_review"
+    max_title_length: 38
+    use_emojis: false
+    allowed_slang:
+      - "ㄹㅇ"
+      - "ㄱㅊ"
+      - "폼 미쳤다"
+      - "실물깡패"
+      - "내돈내산 느낌"
+    style_guidelines:
+      - "존댓말(~습니다, ~해요)을 절대 사용하지 말고 100% 음슴체/반말 단문으로 작성할 것"
+      - "마케터나 업자가 쓴 티가 나면 즉시 비추/차단당하므로, 일반 갤러가 우연히 써보고 남기는 찐 후기처럼 서술할 것"
+      - "장점만 나열하지 말고 사소한 디테일이나 첫인상 체감을 솔직하게 언급할 것"
+    forbidden_words:
+      - "안녕하세요"
+      - "여러분"
+      - "소개해 드립니다"
+      - "만나보세요"
+      - "할인"
+      - "프로모션"
+      - "브랜드"
+      - "공식"
+      - "제공받아"
+
+  naver_cafe:
+    enabled: true
+    default_club_id: "12345678"
+    default_menu_id: 42
+    approval_mode: "telegram_confirm_api" # "telegram_confirm_api" | "clipboard_and_telegram"
+    allowed_head_tags:
+      - "[후기]"
+      - "[정보공유]"
+      - "[내돈내산]"
+      - "[일상/소통]"
+    default_head_tag: "[후기]"
+    tone_style: "friendly_cafe_member"
+    sentence_endings:
+      - "~해요"
+      - "~더라고요"
+      - "~네요"
+      - "~습니다"
+      - "~추천해요"
+    min_body_length: 300
+    max_subject_length: 48
+    search_tag_count:
+      min: 5
+      max: 10
+    style_guidelines:
+      - "도입부는 카페 회원들에게 건네는 자연스러운 인사나 글 작성 계기로 시작할 것"
+      - "본문은 도입(선택 계기) - 핵심 특징/실물 느낌 3가지(소제목 활용) - 총평 및 회원 질문 유도 순서로 구조화할 것"
+      - "네이버 스마트에디터 및 Open API 호환을 위해 문단 구분(<p>, <br>)과 핵심 문장 강조(<b>)를 깔끔하게 적용할 것"
+      - "네이버 카페 검색(C-Rank / D.I.A.+) 노출을 위해 제목의 핵심 키워드를 본문 내 자연스럽게 2~3회 반복 배치할 것"
+    forbidden_words:
+      - "최저가 좌표"
+      - "오픈채팅"
+      - "무료 나눔 이벤트"
+      - "원고료를 제공받아"
+      - "언제든 문의주세요"
+
+global_seo:
+  supported_languages: ["KO", "EN", "JA"]
+  language_mix_ratio:
+    KO: 0.50
+    EN: 0.30
+    JA: 0.20
+  seo_strategy_guidelines:
+    KO: "네이버/인스타 국내 검색량이 높은 직관적 명사 + 라이프스타일 키워드 결합 (예: #성수동카페추천, #데스크테리어)"
+    EN: "직역 투를 피하고 글로벌 유저들이 실제 탐색 탭에서 사용하는 숏테일/미드테일 커뮤니티 태그 사용 (예: #desksetup, #minimalaesthetic)"
+    JA: "일본 인스타그램/X에서 실제 유행하는 카타카나/한자 검색어 및 감성 태그 활용 (예: #韓国トレンド, #カフェ巡り, #ガジェット)"
+    NAVER_CAFE: "네이버 통합검색 및 카페 탭 상위 노출(D.I.A.+)을 위한 구체적 상품군+속성 조합 키워드 ('#' 기호 제외, 예: 커스텀키보드추천, 알루미늄키보드타건감)"

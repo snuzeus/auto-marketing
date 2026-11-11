@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto-Marketing AI Studio</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-alt: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+    }
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--panel-alt);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .pill.ok {
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.12);
+    }
+    .pill.missing {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.12);
+    }
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1024px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--text);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    .channel-toggles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .channel-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-secondary {
+      background: var(--panel-alt);
+      color: var(--text);
+    }
+    .btn-success {
+      background: var(--success);
+      color: #052e16;
+    }
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+    }
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      color: #fecaca;
+    }
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fde68a;
+    }
+    .alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      color: #a7f3d0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+    }
+    .drafts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+      gap: 20px;
+    }
+    @media (max-width: 600px) {
+      .drafts-grid { grid-template-columns: 1fr; }
+    }
+    .draft-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .draft-card.approved {
+      border-color: var(--success);
+      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+    }
+    .draft-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .badge {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-draft { background: #334155; color: #e2e8f0; }
+    .badge-approved { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-invalid { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .preview-img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      background: #0f172a;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .vision-box {
+      font-size: 0.83rem;
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+    }
+    .char-counter {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-align: right;
+      margin-top: -8px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 Auto-Marketing AI Studio</h1>
+    <div id="envStatusPills" class="status-pills">
+      <span class="pill">서버 상태 확인 중...</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Sidebar: Input Form & Vision Summary -->
+    <section>
+      <div class="card">
+        <h2>1. 사진 & 프롬프트 입력</h2>
+        <div id="globalAlert" style="display: none;"></div>
+        <form id="campaignForm">
+          <label for="imageInput">홍보 이미지 (1장)</label>
+          <input type="file" id="imageInput" accept="image/*" required style="margin-bottom: 12px; width: 100%;" />
+          <img id="imagePreview" class="preview-img" alt="미리보기" />
+
+          <label for="promptInput">제품/장소/상황 소개 프롬프트</label>
+          <textarea id="promptInput" placeholder="예: 성수동 수제 말차 라떼 신메뉴, 진한 제주 첫물 말차와 오트밀크 조합" required></textarea>
+
+          <label>생성할 타겟 채널 선택</label>
+          <div class="channel-toggles">
+            <label class="channel-check"><input type="checkbox" name="channel" value="instagram" checked /> Instagram</label>
+            <label class="channel-check"><input type="checkbox" name="channel" value="x_twitter" checked /> X (Twitter)</label>
+            <label class="channel-check"><input type="checkbox" name="channel" value="dcinside" checked /> 디시인사이드</label>
+            <label class="channel-check"><input type="checkbox" name="channel" value="naver_cafe" checked /> 네이버 카페</label>
+          </div>
+
+          <button type="submit" id="generateBtn" class="btn btn-primary">
+            ✨ AI 채널별 맞춤 초안 생성
+          </button>
+        </form>
+
+        <div id="visionSummaryBox" class="vision-box" style="display: none;"></div>
+      </div>
+    </section>
+
+    <!-- Right Workspace: Per-Channel Independent Draft Cards -->
+    <section id="workspaceSection">
+      <div id="emptyState" class="empty-state">
+        <h3>아직 생성된 홍보 문안이 없습니다</h3>
+        <p>좌측에서 사진 1장과 간단한 프롬프트를 입력하고 원하는 SNS 채널을 선택한 뒤 생성 버튼을 눌러주세요.</p>
+      </div>
+      <div id="loadingState" class="empty-state" style="display: none;">
+        <div class="spinner" style="width: 32px; height: 32px; margin-bottom: 12px;"></div>
+        <h3>서버에서 이미지 분석 및 채널별 문안을 생성·검증하고 있습니다...</h3>
+        <p>VisionAgent → TagEngine → CopyAgent → ValidatorAgent (최대 3회 Self-Correction)</p>
+      </div>
+      <div id="draftsContainer" class="drafts-grid" style="display: none;"></div>
+    </section>
+  </main>
+
+  <script>
+    const CHANNEL_LABELS = {
+      instagram: "📸 Instagram",
+      x_twitter: "🐦 X (Twitter)",
+      dcinside: "💬 디시인사이드",
+      naver_cafe: "☕ 네이버 카페"
+    };
+
+    let currentSession = null;
+
+    function showAlert(message, type = "error") {
+      const box = document.getElementById("globalAlert");
+      box.className = `alert alert-${type}`;
+      box.textContent = message;
+      box.style.display = "block";
+    }
+
+    function clearAlert() {
+      const box = document.getElementById("globalAlert");
+      box.style.display = "none";
+      box.textContent = "";
+    }
+
+    async function loadServerHealth() {
+      const pillsEl = document.getElementById("envStatusPills");
+      try {
+        const res = await fetch("/api/health");
+        const data = await res.json();
+        const cfg = data.integrations_configured || {};
+        const items = [
+          { label: `Gemini (${data.models.main_model})`, ok: cfg.gemini },
+          { label: "Postiz API", ok: cfg.postiz },
+          { label: "Naver Cafe API", ok: cfg.naver_cafe_api },
+          { label: "Telegram Bot", ok: cfg.telegram }
+        ];
+        pillsEl.innerHTML = items.map(it =>
+          `<span class="pill ${it.ok ? 'ok' : 'missing'}">${it.label}: ${it.ok ? '연결됨' : '미설정'}</span>`
+        ).join("");
+      } catch (err) {
+        pillsEl.innerHTML = `<span class="pill missing">서버 상태 조회 실패</span>`;
+      }
+    }
+
+    document.getElementById("imageInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById("imagePreview");
+      if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+      } else {
+        preview.style.display = "none";
+      }
+    });
+
+    document.getElementById("campaignForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearAlert();
+
+      const fileInput = document.getElementById("imageInput");
+      const promptInput = document.getElementById("promptInput");
+      const checkedChannels = Array.from(document.querySelectorAll('input[name="channel"]:checked')).map(el => el.value);
+
+      if (!fileInput.files[0]) {
+        showAlert("홍보할 이미지 파일을 선택해 주세요.");
+        return;
+      }
+      if (checkedChannels.length === 0) {
+        showAlert("최소 1개 이상의 타겟 채널을 선택해 주세요.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", fileInput.files[0]);
+      formData.append("prompt", promptInput.value.trim());
+      formData.append("channels", checkedChannels.join(","));
+
+      const btn = document.getElementById("generateBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> 생성 중...`;
+      document.getElementById("emptyState").style.display = "none";
+      document.getElementById("draftsContainer").style.display = "none";
+      document.getElementById("loadingState").style.display = "block";
+
+      try {
+        const res = await fetch("/api/campaigns", { method: "POST", body: formData });
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body.detail || "문안 생성에 실패했습니다.");
+        }
+        currentSession = body;
+        renderSession(currentSession);
+      } catch (err) {
+        showAlert(err.message, "error");
+        if (!currentSession) {
+          document.getElementById("emptyState").style.display = "block";
+        } else {
+          document.getElementById("draftsContainer").style.display = "grid";
+        }
+      } finally {
+        document.getElementById("loadingState").style.display = "none";
+        btn.disabled = false;
+        btn.innerHTML = "✨ AI 채널별 맞춤 초안 생성";
+      }
+    });
+
+    function renderSession(session) {
+      const vBox = document.getElementById("visionSummaryBox");
+      const v = session.vision_result;
+      vBox.style.display = "block";
+      vBox.innerHTML = `
+        <strong>🔍 이미지 분석 요약 (${v.image_meta.width}x${v.image_meta.height}, ${v.image_meta.aspect_ratio_label})</strong><br/>
+        • <b>피사체:</b> ${escapeHtml(v.primary_subject)}<br/>
+        • <b>무드:</b> ${v.visual_mood.map(escapeHtml).join(", ")}<br/>
+        • <b>핵심 소구점:</b> ${v.key_selling_points.map(escapeHtml).join(" / ")}<br/>
+        • <b>인스타 호환 비율:</b> ${v.image_meta.is_instagram_compatible ? "✅ 호환" : "⚠️ 비표준 비율"}
+      `;
+
+      const container = document.getElementById("draftsContainer");
+      container.style.display = "grid";
+      container.innerHTML = "";
+
+      for (const ch of session.enabled_channels) {
+        const draftState = session.drafts[ch];
+        if (!draftState) continue;
+        container.appendChild(buildChannelCard(session.session_id, ch, draftState, session.dispatch_results[ch]));
+      }
+    }
+
+    function buildChannelCard(sessionId, channel, draftState, dispatchResult) {
+      const card = document.createElement("div");
+      const isApproved = draftState.status === "approved";
+      const isValid = draftState.validation && draftState.validation.is_valid;
+      card.className = `draft-card ${isApproved ? "approved" : ""}`;
+      card.id = `card-${channel}`;
+
+      let statusBadge = isApproved
+        ? `<span class="badge badge-approved">✓ 승인됨 (Rev ${draftState.revision})</span>`
+        : `<span class="badge badge-draft">초안 / 미승인 (Rev ${draftState.revision})</span>`;
+      if (!isValid) {
+        statusBadge += ` <span class="badge badge-invalid">규격 위반 ${draftState.validation.failures.length}건</span>`;
+      }
+
+      let validationHtml = "";
+      if (!isValid && draftState.validation.failures.length > 0) {
+        validationHtml = `<div class="alert alert-warning" style="margin-bottom: 4px;">
+          <strong>⚠️ 서버 검증 위반 항목:</strong><ul style="margin: 6px 0 0 18px; padding: 0;">
+            ${draftState.validation.failures.map(f => `<li><b>${escapeHtml(f.rule_violated)}:</b> ${escapeHtml(f.reason)}</li>`).join("")}
+          </ul>
+        </div>`;
+      }
+
+      let dispatchHtml = "";
+      if (dispatchResult) {
+        dispatchHtml = `<div class="alert alert-success" style="margin-bottom: 4px;">
+          <strong>🚀 외부 전송 완료:</strong> <code>${escapeHtml(JSON.stringify(dispatchResult))}</code>
+        </div>`;
+      }
+
+      const fieldsHtml = buildChannelFieldsHtml(channel, draftState.spec);
+
+      card.innerHTML = `
+        <div class="draft-header">
+          <strong>${CHANNEL_LABELS[channel] || channel}</strong>
+          <div>${statusBadge}</div>
+        </div>
+        <div id="alert-${channel}"></div>
+        ${validationHtml}
+        ${dispatchHtml}
+        <div class="fields-area" data-channel="${channel}">
+          ${fieldsHtml}
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input type="text" id="regen-note-${channel}" placeholder="이 채널만 재생성 시 추가 지침 (선택)" style="margin-bottom:0; font-size:0.82rem;" />
+          <button type="button" class="btn btn-outline" id="regen-btn-${channel}" style="white-space:nowrap;">🔄 재작성</button>
+        </div>
+        <div class="action-row">
+          <button type="button" class="btn btn-secondary" id="save-btn-${channel}">💾 수정 저장 & 재검증</button>
+          ${
+            isApproved
+              ? `<button type="button" class="btn btn-outline" id="unapprove-btn-${channel}">승인 해제</button>`
+              : `<button type="button" class="btn btn-success" id="approve-btn-${channel}" ${!isValid ? "disabled" : ""}>✅ 문안 승인</button>`
+          }
+          <button type="button" class="btn btn-primary" id="dispatch-btn-${channel}" style="width:auto; margin-left:auto;" ${!isApproved ? "disabled" : ""}>
+            📤 외부 발행/전송
+          </button>
+        </div>
+      `;
+
+      // Attach automatic live revocation notice if approved user edits an input
+      const inputs = card.querySelectorAll(".fields-area input, .fields-area textarea, .fields-area select");
+      inputs.forEach(inp => {
+        inp.addEventListener("input", () => {
+          if (draftState.status === "approved") {
+            const localAlert = card.querySelector(`#alert-${channel}`);
+            localAlert.innerHTML = `<div class="alert alert-warning">문안이 수정되었습니다. 저장 시 승인 상태가 자동으로 해제됩니다.</div>`;
+            const dispBtn = card.querySelector(`#dispatch-btn-${channel}`);
+            if (dispBtn) dispBtn.disabled = true;
+          }
+        });
+      });
+
+      card.querySelector(`#save-btn-${channel}`).addEventListener("click", () => saveChannelEdit(sessionId, channel, card));
+      card.querySelector(`#regen-btn-${channel}`).addEventListener("click", () => regenerateChannel(sessionId, channel, card));
+
+      const approveBtn = card.querySelector(`#approve-btn-${channel}`);
+      if (approveBtn) {
+        approveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, true));
+      }
+      const unapproveBtn = card.querySelector(`#unapprove-btn-${channel}`);
+      if (unapproveBtn) {
+        unapproveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, false));
+      }
+      card.querySelector(`#dispatch-btn-${channel}`).addEventListener("click", () => dispatchChannel(sessionId, channel, card));
+
+      return card;
+    }
+
+    function buildChannelFieldsHtml(channel, spec) {
+      if (channel === "instagram") {
+        return `
+          <label>후킹 헤드라인 (첫 줄)</label>
+          <input type="text" data-field="hook_headline" value="${escapeAttr(spec.hook_headline)}" />
+          <label>본문</label>
+          <textarea data-field="body" rows="5">${escapeHtml(spec.body)}</textarea>
+          <label>해시태그 (공백 또는 콤마 구분, 10~15개)</label>
+          <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
+        `;
+      }
+      if (channel === "x_twitter") {
+        const fullLen = `${spec.body}\n\n${(spec.hashtags || []).join(" ")}`.trim().length;
+        return `
+          <label>트윗 본문</label>
+          <textarea data-field="body" rows="4">${escapeHtml(spec.body)}</textarea>
+          <label>해시태그 (2~3개)</label>
+          <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
+          <div class="char-counter">현재 전체 글자 수: ${fullLen} / 280자</div>
+        `;
+      }
+      if (channel === "dcinside") {
+        return `
+          <label>타겟 갤러리 ID</label>
+          <input type="text" data-field="gallery_id" value="${escapeAttr(spec.gallery_id)}" />
+          <label>제목 (최대 38자, 자연스러운 갤러리 톤)</label>
+          <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
+          <label>본문 (음슴체/반말, 이모지 및 광고 금지어 배제)</label>
+          <textarea data-field="body" rows="5">${escapeHtml(spec.body)}</textarea>
+        `;
+      }
+      if (channel === "naver_cafe") {
+        const plainLen = (spec.plain_body_preview || "").trim().length;
+        return `
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <div>
+              <label>말머리</label>
+              <input type="text" data-field="head_tag" value="${escapeAttr(spec.head_tag)}" />
+            </div>
+            <div>
+              <label>Club ID</label>
+              <input type="text" data-field="club_id" value="${escapeAttr(spec.club_id)}" />
+            </div>
+            <div>
+              <label>Menu ID</label>
+              <input type="number" data-field="menu_id" value="${escapeAttr(String(spec.menu_id))}" />
+            </div>
+          </div>
+          <label>게시글 제목</label>
+          <input type="text" data-field="subject" value="${escapeAttr(spec.subject)}" />
+          <label>순수 텍스트 본문 (최소 300자 이상)</label>
+          <textarea data-field="plain_body_preview" rows="5">${escapeHtml(spec.plain_body_preview)}</textarea>
+          <div class="char-counter">현재 본문 글자 수: ${plainLen}자 (최소 300자)</div>
+          <label>네이버 에디터 HTML 본문</label>
+          <textarea data-field="html_body" rows="4">${escapeHtml(spec.html_body)}</textarea>
+          <label>검색 태그 ('#' 제외, 콤마 구분 5~10개)</label>
+          <input type="text" data-field="search_tags" value="${escapeAttr((spec.search_tags || []).join(", "))}" />
+        `;
+      }
+      return "";
+    }
+
+    function collectChannelPayload(channel, card) {
+      const getVal = (field) => {
+        const el = card.querySelector(`[data-field="${field}"]`);
+        return el ? el.value : "";
+      };
+      if (channel === "instagram") {
+        const rawTags = getVal("hashtags").split(/[\s,]+/).filter(Boolean);
+        return {
+          hook_headline: getVal("hook_headline"),
+          body: getVal("body"),
+          hashtags: rawTags
+        };
+      }
+      if (channel === "x_twitter") {
+        const rawTags = getVal("hashtags").split(/[\s,]+/).filter(Boolean);
+        return {
+          body: getVal("body"),
+          hashtags: rawTags
+        };
+      }
+      if (channel === "dcinside") {
+        return {
+          gallery_id: getVal("gallery_id"),
+          title: getVal("title"),
+          body: getVal("body")
+        };
+      }
+      if (channel === "naver_cafe") {
+        const rawTags = getVal("search_tags").split(",").map(s => s.trim()).filter(Boolean);
+        return {
+          club_id: getVal("club_id"),
+          menu_id: parseInt(getVal("menu_id") || "42", 10),
+          head_tag: getVal("head_tag"),
+          subject: getVal("subject"),
+          plain_body_preview: getVal("plain_body_preview"),
+          html_body: getVal("html_body"),
+          search_tags: rawTags
+        };
+      }
+      return {};
+    }
+
+    async function saveChannelEdit(sessionId, channel, card) {
+      const payload = collectChannelPayload(channel, card);
+      const btn = card.querySelector(`#save-btn-${channel}`);
+      btn.disabled = true;
+      btn.textContent = "저장 중...";
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "수정 저장에 실패했습니다.");
+        currentSession.drafts[channel] = body;
+        delete currentSession.dispatch_results[channel];
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        const alertEl = card.querySelector(`#alert-${channel}`);
+        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 수정 저장 & 재검증";
+      }
+    }
+
+    async function regenerateChannel(sessionId, channel, card) {
+      const noteEl = card.querySelector(`#regen-note-${channel}`);
+      const feedbackNote = noteEl ? noteEl.value.trim() : "";
+      const btn = card.querySelector(`#regen-btn-${channel}`);
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> 재생성 중...`;
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/regenerate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ feedback_note: feedbackNote })
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "채널 재생성에 실패했습니다.");
+        currentSession.drafts[channel] = body;
+        delete currentSession.dispatch_results[channel];
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        const alertEl = card.querySelector(`#alert-${channel}`);
+        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+        btn.disabled = false;
+        btn.textContent = "🔄 재작성";
+      }
+    }
+
+    async function toggleApproval(sessionId, channel, approve) {
+      const endpoint = approve ? "approve" : "unapprove";
+      const card = document.getElementById(`card-${channel}`);
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/${endpoint}`, {
+          method: "POST"
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "승인 상태 변경 실패");
+        currentSession.drafts[channel] = body;
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        const alertEl = card.querySelector(`#alert-${channel}`);
+        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function dispatchChannel(sessionId, channel, card) {
+      const btn = card.querySelector(`#dispatch-btn-${channel}`);
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> 전송 중...`;
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/dispatch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "외부 연동 전송 실패");
+        currentSession.dispatch_results[channel] = body.result;
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        const alertEl = card.querySelector(`#alert-${channel}`);
+        alertEl.innerHTML = `<div class="alert alert-error"><strong>전송 실패:</strong> ${escapeHtml(err.message)}</div>`;
+        btn.disabled = false;
+        btn.textContent = "📤 외부 발행/전송";
+      }
+    }
+
+    function replaceChannelCard(sessionId, channel) {
+      const oldCard = document.getElementById(`card-${channel}`);
+      const newCard = buildChannelCard(
+        sessionId,
+        channel,
+        currentSession.drafts[channel],
+        currentSession.dispatch_results[channel]
+      );
+      oldCard.replaceWith(newCard);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/"/g, "&quot;");
+    }
+
+    loadServerHealth();
+  </script>
+</body>
+</html>
