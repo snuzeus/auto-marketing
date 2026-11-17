@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from src.core.llm_client import GeminiLLMClient
-from src.core.schema import ChannelType, MultilingualTagSet, VisionAnalysisResult
+from src.core.schema import (
+    INSTAGRAM_MAX_HASHTAGS,
+    ChannelType,
+    MultilingualTagSet,
+    VisionAnalysisResult,
+)
 
 
 class TagEngine:
@@ -24,9 +29,13 @@ class TagEngine:
             "당신은 글로벌 SNS(Instagram, X) 및 네이버 카페(C-Rank / D.I.A.+) 검색 최적화(SEO) 전문가입니다.\n"
             "이미지 비전 분석 결과와 사용자 요청을 바탕으로 다음 규칙에 맞춰 해시태그 및 검색 키워드를 추출하십시오:\n"
             "1. ko_tags, en_tags, ja_tags, instagram_combined, x_combined의 모든 태그는 반드시 '#'으로 시작해야 합니다.\n"
-            "2. instagram_combined는 한국어(50%), 영어(30%), 일본어(20%) 비율로 10~15개를 조합하십시오.\n"
-            "3. x_combined는 가장 파급력 높은 핵심 해시태그 2~3개만 선정하십시오.\n"
-            "4. naver_cafe_search_tags는 '#' 기호를 절대 포함하지 않는 순수 검색 키워드 5~10개로 작성하십시오."
+            f"2. instagram_combined는 3~{INSTAGRAM_MAX_HASHTAGS}개만 고르십시오 (인스타그램은 게시물당 해시태그를 "
+            f"최대 {INSTAGRAM_MAX_HASHTAGS}개까지만 허용합니다). 종목명·상품명·매장/지역처럼 실제로 검색되는 "
+            "한국어 태그를 우선하고, 영어·일본어 태그는 해당 종목의 공식 표기일 때만 최대 1~2개 넣으십시오.\n"
+            "3. x_combined는 가장 파급력 높은 핵심 해시태그 2~3개만 선정하십시오 "
+            "(X는 한글 1자를 2자로 계산하므로 짧은 태그를 고르십시오).\n"
+            "4. naver_cafe_search_tags는 '#' 기호를 절대 포함하지 않는 순수 검색 키워드 5~10개로 작성하십시오.\n"
+            "5. 하나의 태그 안에 한글과 일본어 가나를 섞어 쓰지 마십시오. 표기가 확실하지 않은 태그는 빼십시오."
         )
 
         active_str = ", ".join(enabled_channels)
@@ -74,7 +83,7 @@ class TagEngine:
             ko_tags=ensure_hash(tag_set.ko_tags),
             en_tags=ensure_hash(tag_set.en_tags),
             ja_tags=ensure_hash(tag_set.ja_tags),
-            instagram_combined=ensure_hash(tag_set.instagram_combined)[:15],
+            instagram_combined=ensure_hash(tag_set.instagram_combined)[:INSTAGRAM_MAX_HASHTAGS],
             x_combined=ensure_hash(tag_set.x_combined)[:3],
             naver_cafe_search_tags=strip_hash(tag_set.naver_cafe_search_tags)[:10],
         )

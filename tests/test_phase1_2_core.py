@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from src.agents.validator_agent import validate_single_channel_deterministic
 from src.core.config_loader import (
     load_app_settings,
     load_personas_config,
@@ -60,21 +61,21 @@ def test_x_twitter_char_limit_validation() -> None:
         hashtags=["#데스크테리어", "#desksetup"],
         total_char_count=32,
     )
-    assert len(valid_spec.full_tweet) <= 280
+    assert valid_spec.weighted_length <= 280
+    # 모델이 적어낸 숫자 대신 실제 X 가중치 글자 수로 덮어쓴다 (한글 1자 = 2).
+    assert valid_spec.total_char_count == valid_spec.weighted_length
 
-    with pytest.raises(ValidationError, match="280자를 초과"):
-        XTwitterPostSpec(
-            body="가" * 270,
-            hashtags=["#태그1", "#태그2"],
-            total_char_count=200,  # full_tweet actual length exceeds 280
-        )
-
-    with pytest.raises(ValidationError, match="280자를 초과"):
-        XTwitterPostSpec(
-            body="짧은 본문",
-            hashtags=["#태그1", "#태그2"],
-            total_char_count=285,
-        )
+    # 한도 초과는 예외가 아니라 Stage 1 검증 실패로 보고되어 자기교정 피드백에 쓰인다.
+    too_long = XTwitterPostSpec(
+        body="가" * 150,  # 한글 150자 = 가중치 300
+        hashtags=["#태그1", "#태그2"],
+        total_char_count=200,
+    )
+    assert too_long.weighted_length > 280
+    failures = validate_single_channel_deterministic(
+        "x_twitter", too_long, load_personas_config()
+    )
+    assert "strict_char_limit" in {f.rule_violated for f in failures}
 
 
 def test_social_post_output_channel_isolation() -> None:
@@ -175,8 +176,8 @@ def test_load_app_settings_defaults(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     empty_env.write_text("", encoding="utf-8")
 
     settings = load_app_settings(dotenv_path=empty_env)
-    assert settings.gemini_main_model == "gemini-2.5-flash"
-    assert settings.gemini_lite_model == "gemini-2.5-flash-lite"
+    assert settings.gemini_main_model == "gemini-3.8-flash"
+    assert settings.gemini_lite_model == "gemini-3.5-flash-lite"
     assert settings.has_gemini_key is False
 
 

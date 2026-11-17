@@ -8,7 +8,14 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-ChannelType = Literal["instagram", "x_twitter", "dcinside", "naver_cafe"]
+ChannelType = Literal[
+    "instagram",
+    "x_twitter",
+    "dcinside",
+    "naver_cafe",
+    "kakao_channel",
+    "naver_place",
+]
 ThinkingLevelType = Literal["low", "medium", "high"]
 
 ALL_SUPPORTED_CHANNELS: tuple[ChannelType, ...] = (
@@ -16,6 +23,8 @@ ALL_SUPPORTED_CHANNELS: tuple[ChannelType, ...] = (
     "x_twitter",
     "dcinside",
     "naver_cafe",
+    "kakao_channel",
+    "naver_place",
 )
 
 DEFAULT_PERSONAS_PATH = Path("config/personas.yaml")
@@ -25,8 +34,8 @@ class AppSettings(BaseModel):
     """Server environment settings loaded strictly from server environment variables."""
 
     gemini_api_key: str = Field(default="")
-    gemini_main_model: str = Field(default="gemini-2.5-flash")
-    gemini_lite_model: str = Field(default="gemini-2.5-flash-lite")
+    gemini_main_model: str = Field(default="gemini-3.8-flash")
+    gemini_lite_model: str = Field(default="gemini-3.5-flash-lite")
     gemini_default_thinking_level: ThinkingLevelType = Field(default="low")
 
     postiz_base_url: str = Field(default="http://localhost:3000/api/v1")
@@ -98,10 +107,10 @@ def load_app_settings(dotenv_path: Path | str | None = None) -> AppSettings:
 
     return AppSettings(
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
-        gemini_main_model=os.getenv("GEMINI_MAIN_MODEL", "gemini-2.5-flash").strip()
-        or "gemini-2.5-flash",
-        gemini_lite_model=os.getenv("GEMINI_LITE_MODEL", "gemini-2.5-flash-lite").strip()
-        or "gemini-2.5-flash-lite",
+        gemini_main_model=os.getenv("GEMINI_MAIN_MODEL", "gemini-3.8-flash").strip()
+        or "gemini-3.8-flash",
+        gemini_lite_model=os.getenv("GEMINI_LITE_MODEL", "gemini-3.5-flash-lite").strip()
+        or "gemini-3.5-flash-lite",
         gemini_default_thinking_level=thinking_level,
         postiz_base_url=os.getenv("POSTIZ_BASE_URL", "http://localhost:3000/api/v1").strip(),
         postiz_api_key=os.getenv("POSTIZ_API_KEY", "").strip(),

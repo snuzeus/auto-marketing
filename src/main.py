@@ -13,6 +13,7 @@ from src.agents.copy_agent import CopyAgent
 from src.agents.tag_engine import TagEngine
 from src.agents.validator_agent import ValidatorAgent
 from src.agents.vision_agent import VisionAgent
+from src.core.card_renderer import render_notice_card_png
 from src.core.config_loader import (
     AppSettings,
     load_app_settings,
@@ -192,11 +193,36 @@ async def run_pipeline(
     )
     tools = build_tools_for_enabled_channels(enabled_channels)
 
+    card_path_line = ""
+    if "instagram" in enabled_channels or "x_twitter" in enabled_channels:
+        card_headline = vision_result.primary_subject
+        card_body = ""
+        if post_output.instagram is not None:
+            card_headline = post_output.instagram.hook_headline
+            card_body = post_output.instagram.body
+        elif post_output.x_twitter is not None:
+            x_lines = post_output.x_twitter.body.splitlines()
+            card_headline = x_lines[0] if x_lines else vision_result.primary_subject
+            card_body = "\n".join(x_lines[1:]) if len(x_lines) > 1 else post_output.x_twitter.body
+        cli_card_path = Path(".runtime_uploads/cli_notice_card.png")
+        cli_card_path.parent.mkdir(parents=True, exist_ok=True)
+        cli_card_path.write_bytes(
+            render_notice_card_png(
+                headline=card_headline,
+                body=card_body,
+                source_image_path=image_path,
+                user_prompt=user_prompt,
+                include_source_thumbnail=False,
+            )
+        )
+        card_path_line = f"공지 카드뉴스 이미지 경로 (2번째 슬라이드): {cli_card_path}\n"
+
     dispatch_system_instruction = (
         "당신은 SNS 발행 오케스트레이터입니다. 제공된 검증 완료 원고(SocialPostOutput)와 "
         "활성 채널(enabled_channels)에 해당하는 도구만 정확히 호출하여 초안을 등록하거나 전달하십시오.\n"
-        "- instagram 또는 x_twitter가 활성화된 경우 upload_media를 1회 먼저 호출해 media_id를 얻은 뒤 "
-        "각 활성 채널에 대해 create_draft_post를 호출하십시오.\n"
+        "- instagram 또는 x_twitter가 활성화된 경우 upload_media를 호출하여 원본 이미지(1번째 슬라이드)와 "
+        "공지 카드뉴스 이미지(2번째 슬라이드)를 각각 업로드하고, 얻은 두 media_id를 [원본_media_id, 카드뉴스_media_id] "
+        "순서대로 담아 각 활성 채널에 대해 create_draft_post를 호출하십시오.\n"
         "- naver_cafe가 활성화된 경우 publish_naver_cafe_article을 호출하십시오.\n"
         "- dcinside가 활성화된 경우 dispatch_dcinside_pack을 호출하십시오.\n"
         "- 비활성 채널 도구는 절대 호출하지 마십시오."
@@ -207,7 +233,8 @@ async def run_pipeline(
         .get("approval_mode", "telegram_confirm_api")
     )
     dispatch_prompt = (
-        f"원본 이미지 경로: {image_path}\n"
+        f"원본 이미지 경로 (1번째 슬라이드): {image_path}\n"
+        f"{card_path_line}"
         f"대체 텍스트(alt_text): {vision_result.suggested_alt_text}\n"
         f"네이버 카페 approval_mode: {approval_mode}\n"
         f"검증 완료 원고 JSON:\n{post_output.model_dump_json(indent=2)}"

@@ -17,6 +17,8 @@ htmlcov/
 
 # Runtime & User Uploads
 .runtime_uploads/
+config/*.db
+config/style_profiles.json
 *.jpg
 *.jpeg
 *.png

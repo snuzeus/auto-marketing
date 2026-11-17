@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import mimetypes
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Any, Literal, TypeVar
 
 from google import genai
 from google.genai import types
+from PIL import Image
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -21,6 +23,32 @@ class LLMConfigurationError(RuntimeError):
 
 class LLMGenerationError(RuntimeError):
     """Raised when Gemini API returns an empty or invalid structured response."""
+
+
+MAX_VISION_IMAGE_SIDE = 2048
+
+
+def load_image_bytes_for_model(path: Path, max_side: int = MAX_VISION_IMAGE_SIDE) -> tuple[bytes, str]:
+    """
+    모델에 보낼 이미지 바이트와 MIME 타입을 돌려준다. 긴 변이 `max_side`를 넘는 사진은
+    비율을 유지한 채 줄여 JPEG로 다시 인코딩한다 (원본 파일은 건드리지 않는다).
+    """
+    mime_type, _ = mimetypes.guess_type(str(path))
+    if not mime_type:
+        mime_type = "image/jpeg"
+    raw = path.read_bytes()
+    try:
+        with Image.open(io.BytesIO(raw)) as img:
+            if max(img.size) <= max_side:
+                return raw, mime_type
+            resized = img.convert("RGB")
+            resized.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            resized.save(buf, format="JPEG", quality=90)
+            return buf.getvalue(), "image/jpeg"
+    except Exception:
+        # 축소에 실패하면 원본을 그대로 보낸다.
+        return raw, mime_type
 
 
 def _map_thinking_level(level: ThinkingLevel) -> types.ThinkingLevel:
@@ -38,8 +66,8 @@ class GeminiLLMClient:
     def __init__(
         self,
         api_key: str,
-        main_model: str = "gemini-2.5-flash",
-        lite_model: str = "gemini-2.5-flash-lite",
+        main_model: str = "gemini-3.8-flash",
+        lite_model: str = "gemini-3.5-flash-lite",
         default_thinking_level: ThinkingLevel = "low",
         client: genai.Client | None = None,
     ) -> None:
@@ -109,11 +137,7 @@ class GeminiLLMClient:
         if not path.exists():
             raise FileNotFoundError(f"분석할 이미지 파일을 찾을 수 없습니다: {image_path}")
 
-        mime_type, _ = mimetypes.guess_type(str(path))
-        if not mime_type:
-            mime_type = "image/jpeg"
-
-        image_bytes = path.read_bytes()
+        image_bytes, mime_type = load_image_bytes_for_model(path)
         image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
 
         config = types.GenerateContentConfig(

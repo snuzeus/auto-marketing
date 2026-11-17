@@ -3,604 +3,1306 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Auto-Marketing AI Studio</title>
+  <title>카드샵 공지 스튜디오</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel-alt: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --border: #334155;
-      --radius: 12px;
+      --canvas: #f4f5f7;
+      --surface: #ffffff;
+      --sunken: #f8f9fb;
+      --ink: #15171c;
+      --ink-2: #454b57;
+      --muted: #7a8190;
+      --line: #e3e6ec;
+      --line-strong: #cfd4dd;
+      --accent: #2747d8;
+      --accent-soft: #edf1ff;
+      --ok: #0f7b55;
+      --ok-soft: #e7f5ee;
+      --warn: #9a5b00;
+      --warn-soft: #fdf3dd;
+      --bad: #c22f2f;
+      --bad-soft: #fdeceb;
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 14px;
+      --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--ink);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+      word-break: keep-all;
     }
-    header {
-      padding: 16px 28px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(30, 41, 59, 0.85);
-      backdrop-filter: blur(8px);
-      position: sticky;
-      top: 0;
-      z-index: 20;
+    h1, h2, h3, p { margin: 0; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      height: 56px;
+      display: flex; align-items: center; gap: 28px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
     }
-    header h1 {
-      margin: 0;
-      font-size: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
+    .brand-mark { position: relative; width: 22px; height: 24px; flex: none; }
+    .brand-mark::before, .brand-mark::after {
+      content: ""; position: absolute; width: 15px; height: 21px; border-radius: 3px;
     }
-    .status-pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-size: 0.78rem;
+    .brand-mark::before { left: 0; top: 3px; background: var(--line-strong); transform: rotate(-9deg); }
+    .brand-mark::after { right: 0; top: 0; background: var(--accent); transform: rotate(7deg); }
+    .nav { display: flex; align-self: stretch; gap: 4px; }
+    .nav-tab {
+      position: relative;
+      border: 0; background: none; cursor: pointer;
+      padding: 0 12px;
+      font-weight: 500; color: var(--muted);
     }
-    .pill {
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--panel-alt);
-      color: var(--muted);
-      border: 1px solid var(--border);
+    .nav-tab:hover { color: var(--ink); }
+    .nav-tab.active { color: var(--ink); font-weight: 600; }
+    .nav-tab.active::after {
+      content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--ink);
     }
-    .pill.ok {
-      color: #6ee7b7;
-      border-color: rgba(16, 185, 129, 0.4);
-      background: rgba(16, 185, 129, 0.12);
+    .conn { margin-left: auto; position: relative; }
+    .conn summary {
+      list-style: none; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: var(--r-sm);
+      font-size: 13px; color: var(--ink-2);
     }
-    .pill.missing {
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.4);
-      background: rgba(239, 68, 68, 0.12);
+    .conn summary::-webkit-details-marker { display: none; }
+    .conn summary:hover { background: var(--sunken); }
+    .conn-panel {
+      position: absolute; right: 0; top: calc(100% + 8px);
+      width: 280px; padding: 6px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+      box-shadow: 0 12px 32px -12px rgba(21, 23, 28, 0.25);
     }
-    main {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 24px;
+    .conn-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; font-size: 13px; }
+    .conn-row + .conn-row { border-top: 1px solid var(--line); }
+    .conn-row span:last-child { color: var(--muted); }
+    .conn-row.ok span:last-child { color: var(--ok); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); flex: none; }
+    .dot.ok { background: var(--ok); }
+    .dot.warn { background: #d99a1c; }
+    .dot.bad { background: var(--bad); }
+
+    /* ---------- Page layout ---------- */
+    .page { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    .split { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .split.even { grid-template-columns: minmax(0, 440px) minmax(0, 1fr); }
+    .narrow { max-width: 920px; }
+    @media (max-width: 1020px) {
+      .split, .split.even { grid-template-columns: minmax(0, 1fr); }
+      .compose { position: static !important; max-height: none !important; }
+      .topbar { gap: 12px; padding: 0 14px; }
+      .brand-name { display: none; }
+      .page { padding: 14px; }
     }
-    @media (max-width: 1024px) {
-      main { grid-template-columns: 1fr; }
-    }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-    .card h2 {
-      margin-top: 0;
-      font-size: 1.05rem;
-      margin-bottom: 14px;
-    }
-    label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
+
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
+    .panel-head { padding: 18px 20px 0; }
+    .panel-head h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .panel-head p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .panel-body { padding: 18px 20px 20px; }
+    .compose { position: sticky; top: 80px; max-height: calc(100vh - 104px); overflow: auto; }
+    .compose .panel-body { padding-bottom: 0; }
+    .compose-foot { position: sticky; bottom: 0; margin: 18px -20px 0; padding: 14px 20px 18px; background: var(--surface); border-top: 1px solid var(--line); }
+
+    /* ---------- Forms ---------- */
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    label, .label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+    .field > label, .field > .label { margin-bottom: 6px; }
+    .hint { font-size: 12px; font-weight: 400; color: var(--muted); }
     input[type="text"], input[type="number"], textarea, select {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #0f172a;
-      color: var(--text);
-      font-size: 0.9rem;
-      margin-bottom: 12px;
-      font-family: inherit;
+      padding: 9px 11px;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--r-md);
+      transition: border-color 0.12s, box-shadow 0.12s;
     }
-    textarea { resize: vertical; min-height: 90px; }
-    .channel-toggles {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
+    input[type="text"]:hover, input[type="number"]:hover, textarea:hover, select:hover { border-color: #b3bac6; }
+    input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
     }
-    .channel-check {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #0f172a;
-      border: 1px solid var(--border);
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      color: var(--text);
+    textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+    select {
+      appearance: none; padding-right: 32px; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%237a8190' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 11px center;
     }
+    ::placeholder { color: #a3a9b5; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-3 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; }
+    .counter { margin-top: 5px; text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .counter.over { color: var(--bad); font-weight: 600; }
+
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      font-weight: 600;
-      font-size: 0.88rem;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 36px; padding: 0 14px;
+      border: 1px solid var(--line-strong); border-radius: var(--r-md);
+      background: var(--surface); color: var(--ink);
+      font-weight: 600; font-size: 13px; white-space: nowrap; text-decoration: none;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: background 0.12s, border-color 0.12s;
     }
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      width: 100%;
-    }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-secondary {
-      background: var(--panel-alt);
-      color: var(--text);
-    }
-    .btn-success {
-      background: var(--success);
-      color: #052e16;
-    }
-    .btn-outline {
-      background: transparent;
-      border-color: var(--border);
-      color: var(--text);
-    }
-    .alert {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 0.88rem;
-    }
-    .alert-error {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.45);
-      color: #fecaca;
-    }
-    .alert-warning {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.45);
-      color: #fde68a;
-    }
-    .alert-success {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.45);
-      color: #a7f3d0;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 64px 24px;
-      color: var(--muted);
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-    }
-    .drafts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
-      gap: 20px;
-    }
-    @media (max-width: 600px) {
-      .drafts-grid { grid-template-columns: 1fr; }
-    }
-    .draft-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .draft-card.approved {
-      border-color: var(--success);
-      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
-    }
-    .draft-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
-    }
-    .badge {
-      padding: 3px 9px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-    .badge-draft { background: #334155; color: #e2e8f0; }
-    .badge-approved { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .badge-invalid { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .preview-img {
-      width: 100%;
-      max-height: 220px;
-      object-fit: contain;
-      background: #0f172a;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      display: none;
-    }
-    .action-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: auto;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-    }
+    .btn:hover:not(:disabled) { background: var(--sunken); border-color: #b3bac6; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2a2e37; border-color: #2a2e37; }
+    .btn-approve { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .btn-approve:hover:not(:disabled) { background: #0c6a49; border-color: #0c6a49; }
+    .btn-quiet { border-color: transparent; background: none; color: var(--ink-2); padding: 0 10px; }
+    .btn-quiet.danger:hover:not(:disabled) { color: var(--bad); background: var(--bad-soft); border-color: transparent; }
+    .btn-lg { height: 44px; width: 100%; font-size: 14px; }
+    .btn-sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+    .link-btn { border: 0; background: none; padding: 0; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+    .link-btn:hover { text-decoration: underline; }
     .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 0.8s linear infinite;
+      width: 14px; height: 14px; flex: none;
+      border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .vision-box {
-      font-size: 0.83rem;
-      background: #0f172a;
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 14px;
-      border: 1px solid var(--border);
+    @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } * { transition: none !important; } }
+
+    /* Photo picker */
+    .photo {
+      position: relative; display: flex; align-items: center; gap: 12px;
+      padding: 12px; border: 1px dashed var(--line-strong); border-radius: var(--r-md);
+      background: var(--sunken); cursor: pointer;
     }
-    .char-counter {
-      font-size: 0.76rem;
-      color: var(--muted);
-      text-align: right;
-      margin-top: -8px;
-      margin-bottom: 8px;
+    .photo:hover { border-color: var(--accent); }
+    .photo:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .photo input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .photo-thumb {
+      width: 56px; height: 56px; flex: none; border-radius: var(--r-sm);
+      background: var(--surface) center/cover no-repeat; border: 1px solid var(--line);
+      display: grid; place-items: center; color: var(--muted);
+    }
+    .photo-text { min-width: 0; }
+    .photo-text strong { display: block; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .photo-text span { font-size: 12px; color: var(--muted); }
+
+    /* Channel picker */
+    .channels { border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+    .channel-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; align-items: center; gap: 10px; padding: 7px 8px 7px 12px; }
+    .channel-row + .channel-row { border-top: 1px solid var(--line); }
+    .channel-row label { display: flex; align-items: center; gap: 9px; margin: 0; font-weight: 500; color: var(--ink); cursor: pointer; }
+    .channel-row input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+    .channel-row select { height: 30px; padding: 0 28px 0 9px; font-size: 12.5px; border-radius: var(--r-sm); color: var(--ink-2); }
+    .channel-row:has(input:not(:checked)) { background: var(--sunken); }
+    .channel-row:has(input:not(:checked)) label { color: var(--muted); }
+    .channel-row:has(input:not(:checked)) select { visibility: hidden; }
+
+    /* ---------- Notices ---------- */
+    .note { padding: 10px 12px; border-radius: var(--r-md); font-size: 13px; background: var(--sunken); color: var(--ink-2); }
+    .note + .note { margin-top: 8px; }
+    .note strong { display: block; margin-bottom: 2px; color: inherit; }
+    .note ul { margin: 4px 0 0; padding-left: 18px; }
+    .note-error { background: var(--bad-soft); color: #8f2020; }
+    .note-warning { background: var(--warn-soft); color: #74460a; }
+    .note-success { background: var(--ok-soft); color: #0b5c40; }
+    .note details { margin-top: 4px; }
+    .note summary { cursor: pointer; font-size: 12px; }
+    .note code { display: block; margin-top: 4px; font-size: 11.5px; white-space: pre-wrap; word-break: break-all; }
+
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+    .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--sunken); color: var(--ink-2); border: 1px solid var(--line); }
+
+    /* ---------- Results ---------- */
+    .blank { padding: 72px 24px; text-align: center; }
+    .blank h3 { font-size: 16px; font-weight: 700; }
+    .blank p { margin: 6px auto 0; max-width: 420px; color: var(--muted); }
+    .blank .spinner { width: 22px; height: 22px; margin: 0 auto 14px; display: block; color: var(--accent); }
+
+    .summary { margin-bottom: 16px; }
+    .summary-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 20px 0; }
+    .summary-head h2 { font-size: 15px; font-weight: 700; }
+    .summary-head span { font-size: 12.5px; color: var(--muted); }
+    .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0 24px; margin: 0; padding: 10px 20px 14px; }
+    .facts div { padding: 8px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+    .facts dt { font-size: 12px; color: var(--muted); }
+    .facts dd { margin: 1px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+    .summary-foot { padding: 0 20px 14px; font-size: 12.5px; color: var(--muted); }
+    .summary-foot summary { cursor: pointer; }
+    .summary-foot p { margin-top: 6px; color: var(--ink-2); }
+
+    .ch-tabs { display: flex; gap: 2px; padding: 6px; overflow-x: auto; border-bottom: 1px solid var(--line); }
+    .ch-tab {
+      display: flex; align-items: center; gap: 8px;
+      border: 0; background: none; cursor: pointer; white-space: nowrap;
+      padding: 8px 12px; border-radius: var(--r-sm);
+      font-weight: 500; color: var(--ink-2);
+    }
+    .ch-tab:hover { background: var(--sunken); }
+    .ch-tab.active { background: var(--ink); color: #fff; font-weight: 600; }
+
+    .draft-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 20px 0; }
+    .draft-head h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+    .draft-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+    .draft-notes:not(:empty) { padding: 14px 20px 0; }
+    .draft-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 28px; padding: 18px 20px 20px; }
+    @media (max-width: 1280px) { .draft-grid { grid-template-columns: minmax(0, 1fr); } }
+    .regen { display: flex; gap: 8px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .regen input { flex: 1; min-width: 0; }
+
+    .preview-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .slides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .slide { margin: 0; }
+    .slide img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--sunken); }
+    .slide figcaption { margin-top: 5px; font-size: 12px; color: var(--muted); }
+    .card-tools { margin-top: 14px; }
+    .card-prompt { display: flex; gap: 8px; }
+    .card-prompt input { flex: 1; min-width: 0; }
+    .card-edit { margin-top: 10px; border: 1px solid var(--line); border-radius: var(--r-md); }
+    .card-edit > summary { cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+    .card-edit-body { padding: 4px 12px 12px; }
+    .card-edit-body .field { margin-bottom: 12px; }
+
+    .actions {
+      position: sticky; bottom: 0;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 12px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+    }
+    .actions .spacer { flex: 1; }
+
+    /* ---------- Lists (styles, history) ---------- */
+    .list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 14px; }
+    .list-head h2 { font-size: 16px; font-weight: 700; }
+    .list-head p { margin-top: 4px; font-size: 13px; color: var(--muted); }
+    .item { padding: 16px 20px; border-top: 1px solid var(--line); }
+    .item-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .item-title { font-weight: 600; font-size: 14.5px; overflow-wrap: anywhere; }
+    .item-sub { margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); }
+    .item-actions { display: flex; gap: 4px; flex: none; }
+    .item-memo { margin-top: 10px; padding: 10px 12px; background: var(--sunken); border-radius: var(--r-md); font-size: 13px; color: var(--ink-2); white-space: pre-wrap; max-height: 96px; overflow: auto; }
+    .traits { margin: 12px 0 0; display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 6px 14px; font-size: 13px; }
+    .traits dt { color: var(--muted); }
+    .traits dd { margin: 0; color: var(--ink-2); }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 50;
+      max-width: min(520px, calc(100vw - 32px));
+      padding: 11px 16px; border-radius: var(--r-md);
+      background: var(--ink); color: #fff; font-size: 13px;
+      box-shadow: 0 12px 32px -10px rgba(21, 23, 28, 0.5);
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🚀 Auto-Marketing AI Studio</h1>
-    <div id="envStatusPills" class="status-pills">
-      <span class="pill">서버 상태 확인 중...</span>
-    </div>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">카드샵 공지 스튜디오</span></div>
+    <nav class="nav" aria-label="주 메뉴">
+      <button type="button" class="nav-tab active" id="tabBtnNotice">공지 만들기</button>
+      <button type="button" class="nav-tab" id="tabBtnStyle">글쓰기 스타일</button>
+      <button type="button" class="nav-tab" id="tabBtnHistory">지난 공지</button>
+    </nav>
+    <details class="conn" id="connBox">
+      <summary><span class="dot" id="connDot"></span><span id="connLabel">연결 확인 중</span></summary>
+      <div class="conn-panel" id="envStatusPills"></div>
+    </details>
   </header>
 
-  <main>
-    <!-- Left Sidebar: Input Form & Vision Summary -->
-    <section>
-      <div class="card">
-        <h2>1. 사진 & 프롬프트 입력</h2>
-        <div id="globalAlert" style="display: none;"></div>
-        <form id="campaignForm">
-          <label for="imageInput">홍보 이미지 (1장)</label>
-          <input type="file" id="imageInput" accept="image/*" required style="margin-bottom: 12px; width: 100%;" />
-          <img id="imagePreview" class="preview-img" alt="미리보기" />
+  <!-- 공지 만들기 -->
+  <main id="viewNotice" class="page">
+    <div class="split">
+      <section class="panel compose" aria-label="새 공지 입력">
+        <div class="panel-head"><h2>새 공지</h2></div>
+        <div class="panel-body">
+          <div id="globalAlert" class="note note-error" style="margin-bottom:16px;" hidden></div>
+          <form id="campaignForm" novalidate>
+            <div class="field">
+              <span class="label">사진</span>
+              <div class="photo">
+                <div class="photo-thumb" id="imagePreview" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><circle cx="7" cy="8" r="1.4"/><path d="M3 14l4-3.5 3 2.5 3.5-4 3.5 4"/></svg>
+                </div>
+                <div class="photo-text">
+                  <strong id="imageName">포스터나 상품 사진 선택</strong>
+                  <span id="imageHint">사진 속 글자도 읽어서 공지에 반영합니다</span>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" aria-label="공지에 쓸 사진 선택" />
+              </div>
+            </div>
 
-          <label for="promptInput">제품/장소/상황 소개 프롬프트</label>
-          <textarea id="promptInput" placeholder="예: 성수동 수제 말차 라떼 신메뉴, 진한 제주 첫물 말차와 오트밀크 조합" required></textarea>
+            <div class="field">
+              <label for="noticeCategory">공지 종류</label>
+              <select id="noticeCategory">
+                <option value="tcg_tournament">대회 · 이벤트</option>
+                <option value="tcg_weekly_schedule">주간 대회 일정표</option>
+                <option value="tcg_tournament_result">대회 결과 · 입상 덱</option>
+                <option value="tcg_product_release">신상품 입고</option>
+                <option value="tcg_store_schedule">영업 · 휴무 · 듀얼존</option>
+                <option value="urgent">긴급 안내</option>
+                <option value="general">일반 공지</option>
+              </select>
+            </div>
 
-          <label>생성할 타겟 채널 선택</label>
-          <div class="channel-toggles">
-            <label class="channel-check"><input type="checkbox" name="channel" value="instagram" checked /> Instagram</label>
-            <label class="channel-check"><input type="checkbox" name="channel" value="x_twitter" checked /> X (Twitter)</label>
-            <label class="channel-check"><input type="checkbox" name="channel" value="dcinside" checked /> 디시인사이드</label>
-            <label class="channel-check"><input type="checkbox" name="channel" value="naver_cafe" checked /> 네이버 카페</label>
+            <div class="field">
+              <div class="field-label">
+                <label for="promptInput">공지 내용 메모</label>
+                <button type="button" class="link-btn" id="fillTemplateBtn">항목 양식 넣기</button>
+              </div>
+              <textarea id="promptInput" rows="7" placeholder="일시, 가격, 구매 제한처럼 꼭 들어가야 할 내용을 적어 주세요.&#10;적지 않은 내용은 공지에 넣지 않습니다."></textarea>
+            </div>
+
+            <div class="field">
+              <div class="field-label">
+                <span class="label">올릴 채널</span>
+                <span class="hint">오른쪽에서 글쓰기 스타일 선택</span>
+              </div>
+              <div class="channels">
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="instagram" checked /> 인스타그램</label>
+                  <select id="style-select-instagram" aria-label="인스타그램 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="x_twitter" checked /> X</label>
+                  <select id="style-select-x_twitter" aria-label="X 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="naver_cafe" checked /> 네이버 카페</label>
+                  <select id="style-select-naver_cafe" aria-label="네이버 카페 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="dcinside" checked /> 디시인사이드</label>
+                  <select id="style-select-dcinside" aria-label="디시인사이드 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="kakao_channel" checked /> 카카오톡 채널</label>
+                  <select id="style-select-kakao_channel" aria-label="카카오톡 채널 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+                <div class="channel-row">
+                  <label><input type="checkbox" name="channel" value="naver_place" checked /> 네이버 플레이스</label>
+                  <select id="style-select-naver_place" aria-label="네이버 플레이스 글쓰기 스타일"><option value="">기본 스타일</option></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="compose-foot">
+              <button type="submit" id="generateBtn" class="btn btn-primary btn-lg">공지문 만들기</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="workspaceSection" aria-label="만들어진 공지">
+        <div id="emptyState" class="panel blank">
+          <h3>아직 만든 공지가 없습니다</h3>
+          <p>왼쪽에 사진과 메모를 넣고 공지문 만들기를 누르면, 채널별 공지문과 카드 이미지가 여기에 나타납니다.</p>
+        </div>
+        <div id="loadingState" class="panel blank" hidden>
+          <span class="spinner"></span>
+          <h3>공지문을 만들고 있습니다</h3>
+          <p>사진을 읽고, 채널별로 글을 쓴 다음 규격과 사실 관계를 확인합니다. 보통 20~40초 걸립니다.</p>
+        </div>
+        <div id="resultArea" hidden>
+          <div id="visionSummaryBox" class="panel summary"></div>
+          <div class="panel">
+            <div id="channelTabs" class="ch-tabs" role="tablist" aria-label="채널"></div>
+            <div id="draftsContainer"></div>
           </div>
+        </div>
+      </section>
+    </div>
+  </main>
 
-          <button type="submit" id="generateBtn" class="btn btn-primary">
-            ✨ AI 채널별 맞춤 초안 생성
-          </button>
-        </form>
+  <!-- 글쓰기 스타일 -->
+  <main id="viewStyle" class="page" hidden>
+    <div class="split even">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>스타일 추가</h2>
+          <p>평소 올리던 공지글을 붙여넣으면 말투, 줄바꿈, 마무리 인사를 그대로 따라 씁니다.</p>
+        </div>
+        <div class="panel-body">
+          <div id="styleAlert" class="note" style="margin-bottom:16px;" hidden></div>
+          <form id="learnStyleForm">
+            <div class="row-2">
+              <div class="field">
+                <label for="stylePlatform">채널</label>
+                <select id="stylePlatform">
+                  <option value="instagram">인스타그램</option>
+                  <option value="x_twitter">X</option>
+                  <option value="naver_cafe">네이버 카페</option>
+                  <option value="dcinside">디시인사이드</option>
+                  <option value="kakao_channel">카카오톡 채널</option>
+                  <option value="naver_place">네이버 플레이스</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="styleHandle">계정 이름</label>
+                <input type="text" id="styleHandle" placeholder="@realcardshop" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="samplePost1">기존 공지글 1</label>
+              <textarea id="samplePost1" rows="6" placeholder="이 계정에 실제로 올렸던 공지글 전문" required></textarea>
+            </div>
+            <div class="field">
+              <div class="field-label"><label for="samplePost2">기존 공지글 2</label><span class="hint">선택</span></div>
+              <textarea id="samplePost2" rows="4"></textarea>
+            </div>
+            <div class="field">
+              <div class="field-label"><label for="samplePost3">기존 공지글 3</label><span class="hint">선택</span></div>
+              <textarea id="samplePost3" rows="4"></textarea>
+            </div>
+            <button type="submit" id="learnStyleBtn" class="btn btn-primary btn-lg">스타일 저장</button>
+          </form>
+        </div>
+      </section>
 
-        <div id="visionSummaryBox" class="vision-box" style="display: none;"></div>
-      </div>
-    </section>
+      <section class="panel">
+        <div class="list-head"><h2>저장된 스타일</h2></div>
+        <div id="profilesListContainer"></div>
+      </section>
+    </div>
+  </main>
 
-    <!-- Right Workspace: Per-Channel Independent Draft Cards -->
-    <section id="workspaceSection">
-      <div id="emptyState" class="empty-state">
-        <h3>아직 생성된 홍보 문안이 없습니다</h3>
-        <p>좌측에서 사진 1장과 간단한 프롬프트를 입력하고 원하는 SNS 채널을 선택한 뒤 생성 버튼을 눌러주세요.</p>
+  <!-- 지난 공지 -->
+  <main id="viewHistory" class="page" hidden>
+    <section class="panel narrow">
+      <div class="list-head">
+        <div>
+          <h2>지난 공지</h2>
+          <p>다시 열어 이어서 수정하거나, 메모만 가져와 새 공지를 만들 수 있습니다.</p>
+        </div>
+        <button type="button" class="btn btn-sm" onclick="loadHistoryList()">새로고침</button>
       </div>
-      <div id="loadingState" class="empty-state" style="display: none;">
-        <div class="spinner" style="width: 32px; height: 32px; margin-bottom: 12px;"></div>
-        <h3>서버에서 이미지 분석 및 채널별 문안을 생성·검증하고 있습니다...</h3>
-        <p>VisionAgent → TagEngine → CopyAgent → ValidatorAgent (최대 3회 Self-Correction)</p>
-      </div>
-      <div id="draftsContainer" class="drafts-grid" style="display: none;"></div>
+      <div id="historyListContainer"></div>
     </section>
   </main>
 
+  <div id="toast" class="toast" role="status" hidden></div>
+
   <script>
     const CHANNEL_LABELS = {
-      instagram: "📸 Instagram",
-      x_twitter: "🐦 X (Twitter)",
-      dcinside: "💬 디시인사이드",
-      naver_cafe: "☕ 네이버 카페"
+      instagram: "인스타그램",
+      x_twitter: "X",
+      dcinside: "디시인사이드",
+      naver_cafe: "네이버 카페",
+      kakao_channel: "카카오톡 채널",
+      naver_place: "네이버 플레이스"
     };
 
-    let currentSession = null;
+    const CATEGORY_LABELS = {
+      tcg_tournament: "대회 · 이벤트",
+      tcg_weekly_schedule: "주간 일정표",
+      tcg_tournament_result: "대회 결과",
+      tcg_product_release: "신상품 입고",
+      tcg_store_schedule: "영업 · 휴무",
+      urgent: "긴급 안내",
+      general: "일반 공지",
+      schedule_change: "일정 변경",
+      event_open: "이벤트"
+    };
 
-    function showAlert(message, type = "error") {
-      const box = document.getElementById("globalAlert");
-      box.className = `alert alert-${type}`;
+    // 공지 종류별 메모 양식
+    const PROMPT_TEMPLATES = {
+      tcg_tournament: "[종목] \n[일시] \n[장소] \n[정원/접수] \n[참가비] \n[대회 룰] \n[상품] ",
+      tcg_weekly_schedule: "[주간 기간] \n[월요일 대회] \n[화요일 대회] \n[수요일 대회] \n[목요일 대회] \n[금요일 대회] \n[토요일 대회] \n[일요일 대회] \n[공통 안내] ",
+      tcg_tournament_result: "[종목/대회명] \n[참가 인원] \n[1위 우승자 / 사용 덱] \n[2위 입상자 / 사용 덱] \n[3~4위 입상자 / 사용 덱] \n[축하/다음 대회 안내] ",
+      tcg_product_release: "[종목] \n[입고 상품] \n[판매 일시] \n[구매 제한] \n[판매 가격] \n[결제/안내] ",
+      tcg_store_schedule: "[공지 내용] \n[영업/이용 시간] \n[듀얼존 이용료] \n[정기/임시 휴무] \n[매너/유의사항] ",
+      urgent: "[긴급 공지 내용] \n[대상 상품/이벤트] \n[현재 상황] \n[조치/안내 사항] ",
+      general: "[공지 내용] \n[일시/기간] \n[대상] \n[유의사항] "
+    };
+
+    const CARD_THEMES = [
+      ["cyber_cyan", "네이비"],
+      ["minimal_light", "화이트"],
+      ["crimson_red", "레드"],
+      ["royal_gold", "골드"],
+      ["emerald_green", "그린"],
+      ["violet_purple", "퍼플"]
+    ];
+
+    const BODY_LIMITS = { kakao_channel: 400, naver_place: 500 };
+
+    let currentSession = null;
+    let learnedProfiles = [];
+    let activeChannel = null;
+    let toastTimer = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function showToast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.hidden = true; }, 3600);
+    }
+
+    function activateTab(tabName) {
+      $("tabBtnNotice").classList.toggle("active", tabName === "notice");
+      $("tabBtnStyle").classList.toggle("active", tabName === "style");
+      $("tabBtnHistory").classList.toggle("active", tabName === "history");
+      $("viewNotice").hidden = tabName !== "notice";
+      $("viewStyle").hidden = tabName !== "style";
+      $("viewHistory").hidden = tabName !== "history";
+      if (tabName === "history") loadHistoryList();
+    }
+
+    $("tabBtnNotice").addEventListener("click", () => activateTab("notice"));
+    $("tabBtnStyle").addEventListener("click", () => activateTab("style"));
+    $("tabBtnHistory").addEventListener("click", () => activateTab("history"));
+
+    document.addEventListener("click", (e) => {
+      const box = $("connBox");
+      if (box.open && !box.contains(e.target)) box.open = false;
+    });
+
+    $("fillTemplateBtn").addEventListener("click", () => {
+      const input = $("promptInput");
+      const template = PROMPT_TEMPLATES[$("noticeCategory").value] || PROMPT_TEMPLATES.general;
+      const current = input.value.trim();
+      const isUntouchedTemplate = Object.values(PROMPT_TEMPLATES).some(t => t.trim() === current);
+      if (current && !isUntouchedTemplate && !confirm("적어 둔 메모를 지우고 양식으로 바꿀까요?")) return;
+      input.value = template;
+      input.focus();
+      const firstEnd = template.indexOf("\n");
+      input.setSelectionRange(firstEnd, firstEnd);
+    });
+
+    function showAlert(message) {
+      const box = $("globalAlert");
       box.textContent = message;
-      box.style.display = "block";
+      box.hidden = false;
     }
 
     function clearAlert() {
-      const box = document.getElementById("globalAlert");
-      box.style.display = "none";
+      const box = $("globalAlert");
+      box.hidden = true;
       box.textContent = "";
     }
 
     async function loadServerHealth() {
-      const pillsEl = document.getElementById("envStatusPills");
+      const panel = $("envStatusPills");
       try {
         const res = await fetch("/api/health");
         const data = await res.json();
         const cfg = data.integrations_configured || {};
         const items = [
-          { label: `Gemini (${data.models.main_model})`, ok: cfg.gemini },
-          { label: "Postiz API", ok: cfg.postiz },
-          { label: "Naver Cafe API", ok: cfg.naver_cafe_api },
-          { label: "Telegram Bot", ok: cfg.telegram }
+          { label: "글 생성 (Gemini)", ok: cfg.gemini, required: true },
+          { label: "인스타그램 · X 전송 (Postiz)", ok: cfg.postiz },
+          { label: "네이버 카페 전송", ok: cfg.naver_cafe_api },
+          { label: "텔레그램 알림", ok: cfg.telegram }
         ];
-        pillsEl.innerHTML = items.map(it =>
-          `<span class="pill ${it.ok ? 'ok' : 'missing'}">${it.label}: ${it.ok ? '연결됨' : '미설정'}</span>`
+        panel.innerHTML = items.map(it =>
+          `<div class="conn-row ${it.ok ? "ok" : ""}"><span>${it.label}</span><span>${it.ok ? "연결됨" : "미설정"}</span></div>`
         ).join("");
+        const missing = items.filter(it => !it.ok).length;
+        const dot = $("connDot");
+        if (!cfg.gemini) {
+          dot.className = "dot bad";
+          $("connLabel").textContent = "글 생성 키 미설정";
+        } else if (missing > 0) {
+          dot.className = "dot warn";
+          $("connLabel").textContent = `연동 ${missing}개 미설정`;
+        } else {
+          dot.className = "dot ok";
+          $("connLabel").textContent = "모두 연결됨";
+        }
       } catch (err) {
-        pillsEl.innerHTML = `<span class="pill missing">서버 상태 조회 실패</span>`;
+        $("connDot").className = "dot bad";
+        $("connLabel").textContent = "서버에 연결할 수 없음";
+        panel.innerHTML = `<div class="conn-row"><span>서버 상태를 불러오지 못했습니다</span><span></span></div>`;
       }
     }
 
-    document.getElementById("imageInput").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      const preview = document.getElementById("imagePreview");
-      if (file) {
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = "block";
-      } else {
-        preview.style.display = "none";
+    async function loadStyleProfiles() {
+      try {
+        const res = await fetch("/api/style-profiles");
+        learnedProfiles = await res.json();
+        renderStyleDropdowns();
+        renderProfilesList();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderStyleDropdowns() {
+      Object.keys(CHANNEL_LABELS).forEach(ch => {
+        const sel = $(`style-select-${ch}`);
+        if (!sel) return;
+        const currentVal = sel.value;
+        const matching = learnedProfiles.filter(p => p.platform === ch);
+        sel.innerHTML = `<option value="">기본 스타일</option>` +
+          matching.map(p => `<option value="${escapeAttr(p.profile_id)}">${escapeHtml(p.account_handle)}</option>`).join("");
+        if (matching.some(p => p.profile_id === currentVal)) {
+          sel.value = currentVal;
+        } else if (matching.length > 0 && !currentVal) {
+          sel.value = matching[matching.length - 1].profile_id;
+        }
+      });
+    }
+
+    function renderProfilesList() {
+      const container = $("profilesListContainer");
+      if (!learnedProfiles || learnedProfiles.length === 0) {
+        container.innerHTML = `<div class="item blank" style="padding:48px 24px;"><p>저장된 스타일이 없습니다. 평소 올리던 공지글을 넣어 첫 스타일을 만들어 보세요.</p></div>`;
+        return;
+      }
+      container.innerHTML = learnedProfiles.map(p => `
+        <article class="item">
+          <div class="item-head">
+            <div>
+              <div class="item-title">${escapeHtml(p.account_handle)}</div>
+              <div class="item-sub"><span class="tag">${CHANNEL_LABELS[p.platform] || escapeHtml(p.platform)}</span><span>예시 글 ${(p.sample_posts || []).length}개</span></div>
+            </div>
+            <div class="item-actions">
+              <button type="button" class="btn btn-sm btn-quiet danger" onclick="deleteProfile('${escapeAttr(p.profile_id)}')">삭제</button>
+            </div>
+          </div>
+          <dl class="traits">
+            <dt>말투</dt><dd>${escapeHtml(p.tone_summary)}</dd>
+            <dt>첫 줄</dt><dd>${escapeHtml(p.opening_pattern)}</dd>
+            <dt>서식</dt><dd>${(p.bullet_and_formatting_rules || []).map(escapeHtml).join("<br/>")}</dd>
+            <dt>이모지</dt><dd>${escapeHtml(p.emoji_policy)}</dd>
+            <dt>마무리</dt><dd>${escapeHtml(p.closing_signature)}</dd>
+          </dl>
+        </article>
+      `).join("");
+    }
+
+    window.deleteProfile = async function(profileId) {
+      if (!confirm("이 스타일을 삭제할까요?")) return;
+      try {
+        await fetch(`/api/style-profiles/${encodeURIComponent(profileId)}`, { method: "DELETE" });
+        await loadStyleProfiles();
+      } catch (err) {
+        showToast("삭제하지 못했습니다: " + err.message);
+      }
+    };
+
+    function formatDateTime(iso) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso || "").slice(0, 16).replace("T", " ");
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    async function loadHistoryList() {
+      const container = $("historyListContainer");
+      try {
+        const res = await fetch("/api/history");
+        const items = await res.json();
+        if (!items || items.length === 0) {
+          container.innerHTML = `<div class="item blank" style="padding:48px 24px;"><p>아직 만든 공지가 없습니다.</p></div>`;
+          return;
+        }
+        container.innerHTML = items.map(it => `
+          <article class="item">
+            <div class="item-head">
+              <div>
+                <div class="item-title">${escapeHtml(it.primary_subject)}</div>
+                <div class="item-sub">
+                  <span class="tag">${CATEGORY_LABELS[it.notice_category] || escapeHtml(it.notice_category)}</span>
+                  <span>${escapeHtml(formatDateTime(it.created_at))}</span>
+                  <span>${(it.enabled_channels || []).map(c => CHANNEL_LABELS[c] || escapeHtml(c)).join(", ")}</span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-sm" onclick="restoreSession('${escapeAttr(it.session_id)}')">열기</button>
+                <button type="button" class="btn btn-sm" onclick="reusePrompt('${escapeAttr(it.session_id)}')">메모 가져오기</button>
+                <button type="button" class="btn btn-sm btn-quiet danger" onclick="deleteHistoryItem('${escapeAttr(it.session_id)}')">삭제</button>
+              </div>
+            </div>
+            <div class="item-memo">${escapeHtml(it.user_prompt)}</div>
+          </article>
+        `).join("");
+      } catch (err) {
+        container.innerHTML = `<div class="item"><div class="note note-error">지난 공지를 불러오지 못했습니다: ${escapeHtml(err.message)}</div></div>`;
+      }
+    }
+
+    window.restoreSession = async function(sessionId) {
+      try {
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(sessionId)}`);
+        const session = await res.json();
+        if (!res.ok) throw new Error(session.detail || "공지를 열지 못했습니다.");
+        currentSession = session;
+        activeChannel = null;
+        $("promptInput").value = session.user_prompt;
+        $("noticeCategory").value = session.notice_category;
+        renderSession(currentSession);
+        activateTab("notice");
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
+    window.reusePrompt = async function(sessionId) {
+      try {
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(sessionId)}`);
+        const session = await res.json();
+        if (!res.ok) throw new Error(session.detail || "메모를 가져오지 못했습니다.");
+        $("promptInput").value = session.user_prompt;
+        $("noticeCategory").value = session.notice_category;
+        activateTab("notice");
+        showToast("메모를 가져왔습니다. 사진을 고르고 내용을 고쳐 주세요.");
+      } catch (err) {
+        showToast(err.message);
+      }
+    };
+
+    window.deleteHistoryItem = async function(sessionId) {
+      if (!confirm("이 공지를 목록에서 삭제할까요?")) return;
+      await fetch(`/api/history/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+      await loadHistoryList();
+    };
+
+    $("learnStyleForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const alertBox = $("styleAlert");
+      alertBox.hidden = true;
+
+      const platform = $("stylePlatform").value;
+      const accountHandle = $("styleHandle").value.trim();
+      const samples = [$("samplePost1").value.trim(), $("samplePost2").value.trim(), $("samplePost3").value.trim()].filter(Boolean);
+
+      const btn = $("learnStyleBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> 글을 분석하는 중`;
+
+      try {
+        const res = await fetch("/api/style-profiles/learn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ platform, account_handle: accountHandle, sample_posts: samples })
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "스타일을 저장하지 못했습니다.");
+
+        alertBox.className = "note note-success";
+        alertBox.textContent = `${body.account_handle} 스타일을 저장했습니다.`;
+        alertBox.hidden = false;
+
+        $("samplePost1").value = "";
+        $("samplePost2").value = "";
+        $("samplePost3").value = "";
+        await loadStyleProfiles();
+      } catch (err) {
+        alertBox.className = "note note-error";
+        alertBox.textContent = err.message;
+        alertBox.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "스타일 저장";
       }
     });
 
-    document.getElementById("campaignForm").addEventListener("submit", async (e) => {
+    $("imageInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const thumb = $("imagePreview");
+      if (file) {
+        thumb.style.backgroundImage = `url("${URL.createObjectURL(file)}")`;
+        thumb.querySelector("svg").style.display = "none";
+        $("imageName").textContent = file.name;
+        $("imageHint").textContent = "눌러서 다른 사진으로 바꾸기";
+      } else {
+        thumb.style.backgroundImage = "";
+        thumb.querySelector("svg").style.display = "";
+        $("imageName").textContent = "포스터나 상품 사진 선택";
+        $("imageHint").textContent = "사진 속 글자도 읽어서 공지에 반영합니다";
+      }
+    });
+
+    $("campaignForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       clearAlert();
 
-      const fileInput = document.getElementById("imageInput");
-      const promptInput = document.getElementById("promptInput");
+      const fileInput = $("imageInput");
+      const promptText = $("promptInput").value.trim();
       const checkedChannels = Array.from(document.querySelectorAll('input[name="channel"]:checked')).map(el => el.value);
 
-      if (!fileInput.files[0]) {
-        showAlert("홍보할 이미지 파일을 선택해 주세요.");
-        return;
-      }
-      if (checkedChannels.length === 0) {
-        showAlert("최소 1개 이상의 타겟 채널을 선택해 주세요.");
-        return;
-      }
+      if (!fileInput.files[0]) { showAlert("공지에 쓸 사진을 선택해 주세요."); return; }
+      if (!promptText) { showAlert("공지 내용 메모를 적어 주세요."); return; }
+      if (checkedChannels.length === 0) { showAlert("올릴 채널을 하나 이상 선택해 주세요."); return; }
+
+      const styleMap = {};
+      checkedChannels.forEach(ch => {
+        const sel = $(`style-select-${ch}`);
+        if (sel && sel.value) styleMap[ch] = sel.value;
+      });
 
       const formData = new FormData();
       formData.append("image", fileInput.files[0]);
-      formData.append("prompt", promptInput.value.trim());
+      formData.append("prompt", promptText);
       formData.append("channels", checkedChannels.join(","));
+      formData.append("notice_category", $("noticeCategory").value);
+      formData.append("style_profile_map", JSON.stringify(styleMap));
 
-      const btn = document.getElementById("generateBtn");
+      const btn = $("generateBtn");
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner"></span> 생성 중...`;
-      document.getElementById("emptyState").style.display = "none";
-      document.getElementById("draftsContainer").style.display = "none";
-      document.getElementById("loadingState").style.display = "block";
+      btn.innerHTML = `<span class="spinner"></span> 만드는 중`;
+      $("emptyState").hidden = true;
+      $("resultArea").hidden = true;
+      $("loadingState").hidden = false;
 
       try {
         const res = await fetch("/api/campaigns", { method: "POST", body: formData });
         const body = await res.json();
-        if (!res.ok) {
-          throw new Error(body.detail || "문안 생성에 실패했습니다.");
-        }
+        if (!res.ok) throw new Error(body.detail || "공지문을 만들지 못했습니다.");
         currentSession = body;
+        activeChannel = null;
         renderSession(currentSession);
       } catch (err) {
-        showAlert(err.message, "error");
-        if (!currentSession) {
-          document.getElementById("emptyState").style.display = "block";
+        showAlert(err.message);
+        if (currentSession) {
+          $("resultArea").hidden = false;
         } else {
-          document.getElementById("draftsContainer").style.display = "grid";
+          $("emptyState").hidden = false;
         }
       } finally {
-        document.getElementById("loadingState").style.display = "none";
+        $("loadingState").hidden = true;
         btn.disabled = false;
-        btn.innerHTML = "✨ AI 채널별 맞춤 초안 생성";
+        btn.textContent = "공지문 만들기";
       }
     });
 
+    function channelStatus(draftState) {
+      const v = draftState.validation || {};
+      if (draftState.status === "approved") return { dot: "ok", text: "승인됨" };
+      if (v.is_valid === false) return { dot: "bad", text: "수정 필요" };
+      if ((v.warnings || []).length > 0) return { dot: "warn", text: "확인 필요" };
+      return { dot: "", text: "초안" };
+    }
+
+    function renderChannelTabs() {
+      const tabs = $("channelTabs");
+      const channels = currentSession.enabled_channels.filter(ch => currentSession.drafts[ch]);
+      tabs.innerHTML = channels.map(ch => {
+        const st = channelStatus(currentSession.drafts[ch]);
+        const isActive = ch === activeChannel;
+        return `<button type="button" role="tab" aria-selected="${isActive}" class="ch-tab ${isActive ? "active" : ""}" data-channel="${ch}" title="${st.text}">
+          <span class="dot ${st.dot}"></span>${CHANNEL_LABELS[ch] || ch}
+        </button>`;
+      }).join("");
+      tabs.querySelectorAll(".ch-tab").forEach(btn => {
+        btn.addEventListener("click", () => selectChannel(btn.getAttribute("data-channel")));
+      });
+    }
+
+    function selectChannel(channel) {
+      activeChannel = channel;
+      renderChannelTabs();
+      document.querySelectorAll("#draftsContainer > .draft").forEach(card => {
+        card.hidden = card.id !== `card-${channel}`;
+      });
+    }
+
     function renderSession(session) {
-      const vBox = document.getElementById("visionSummaryBox");
+      $("emptyState").hidden = true;
+      $("loadingState").hidden = true;
+      $("resultArea").hidden = false;
+
       const v = session.vision_result;
-      vBox.style.display = "block";
-      vBox.innerHTML = `
-        <strong>🔍 이미지 분석 요약 (${v.image_meta.width}x${v.image_meta.height}, ${v.image_meta.aspect_ratio_label})</strong><br/>
-        • <b>피사체:</b> ${escapeHtml(v.primary_subject)}<br/>
-        • <b>무드:</b> ${v.visual_mood.map(escapeHtml).join(", ")}<br/>
-        • <b>핵심 소구점:</b> ${v.key_selling_points.map(escapeHtml).join(" / ")}<br/>
-        • <b>인스타 호환 비율:</b> ${v.image_meta.is_instagram_compatible ? "✅ 호환" : "⚠️ 비표준 비율"}
+      const facts = v.notice_facts || [];
+      const factsHtml = facts.length > 0
+        ? `<dl class="facts">${facts.map(f => `<div><dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.value)}</dd></div>`).join("")}</dl>`
+        : `<dl class="facts">${(v.key_selling_points || []).map(p => `<div><dd>${escapeHtml(p)}</dd></div>`).join("")}</dl>`;
+      const ocr = v.extracted_text || [];
+      const failed = session.enabled_channels.filter(ch => !session.drafts[ch]);
+      $("visionSummaryBox").innerHTML = `
+        <div class="summary-head">
+          <h2>${escapeHtml(v.primary_subject)}</h2>
+          <span>공지문은 아래 내용만 사실로 사용합니다</span>
+        </div>
+        ${factsHtml}
+        <div class="summary-foot">
+          ${ocr.length > 0
+            ? `<details><summary>사진에서 읽은 글자 ${ocr.length}개</summary><p>${ocr.map(escapeHtml).join(", ")}</p></details>`
+            : `사진에서 읽은 글자가 없습니다.`}
+          ${failed.length > 0
+            ? `<div class="note note-warning" style="margin-top:10px;">${failed.map(c => CHANNEL_LABELS[c] || c).join(", ")} 공지문은 만들지 못했습니다. 메모를 조금 고쳐 다시 만들어 주세요.</div>`
+            : ""}
+        </div>
       `;
 
-      const container = document.getElementById("draftsContainer");
-      container.style.display = "grid";
+      const container = $("draftsContainer");
       container.innerHTML = "";
+      const available = session.enabled_channels.filter(ch => session.drafts[ch]);
+      if (!available.includes(activeChannel)) activeChannel = available[0] || null;
+      for (const ch of available) {
+        container.appendChild(buildChannelCard(session.session_id, ch, session.drafts[ch], session.dispatch_results[ch]));
+      }
+      renderChannelTabs();
+    }
 
-      for (const ch of session.enabled_channels) {
-        const draftState = session.drafts[ch];
-        if (!draftState) continue;
-        container.appendChild(buildChannelCard(session.session_id, ch, draftState, session.dispatch_results[ch]));
+    // X 가중치 글자 수: 서버의 x_weighted_length()와 같은 규칙 (한글 1자 = 2, URL = 23)
+    function xWeightedLength(text) {
+      const normalized = (text || "").normalize("NFC");
+      const urlRe = /https?:\/\/\S+/g;
+      const urls = normalized.match(urlRe) || [];
+      let total = urls.length * 23;
+      for (const ch of normalized.replace(urlRe, "")) {
+        const cp = ch.codePointAt(0);
+        const light = (cp <= 0x10FF) || (cp >= 0x2000 && cp <= 0x200D) ||
+          (cp >= 0x2010 && cp <= 0x201F) || (cp >= 0x2032 && cp <= 0x2037);
+        total += light ? 1 : 2;
+      }
+      return total;
+    }
+
+    function updateCounter(channel, card) {
+      const el = card.querySelector("[data-counter]");
+      if (!el) return;
+      const val = (field) => (card.querySelector(`[data-field="${field}"]`) || {}).value || "";
+      if (channel === "x_twitter") {
+        const tags = val("hashtags").split(/[\s,]+/).filter(Boolean).join(" ");
+        const n = xWeightedLength(`${val("body")}\n\n${tags}`.trim());
+        el.textContent = `${n} / 280 · 한글은 한 글자가 2로 계산됩니다`;
+        el.classList.toggle("over", n > 280);
+      } else if (channel === "naver_cafe") {
+        const n = val("plain_body_preview").trim().length;
+        el.textContent = `${n}자 · 300자 이상`;
+        el.classList.toggle("over", n < 300);
+      } else if (BODY_LIMITS[channel]) {
+        const n = val("body").length;
+        el.textContent = `${n} / ${BODY_LIMITS[channel]}자`;
+        el.classList.toggle("over", n > BODY_LIMITS[channel]);
+      } else if (channel === "instagram") {
+        const n = val("hashtags").split(/[\s,]+/).filter(Boolean).length;
+        el.textContent = `${n} / 5개`;
+        el.classList.toggle("over", n > 5);
       }
     }
 
     function buildChannelCard(sessionId, channel, draftState, dispatchResult) {
       const card = document.createElement("div");
       const isApproved = draftState.status === "approved";
-      const isValid = draftState.validation && draftState.validation.is_valid;
-      card.className = `draft-card ${isApproved ? "approved" : ""}`;
+      const validation = draftState.validation || { is_valid: true, failures: [], warnings: [] };
+      const isValid = validation.is_valid;
+      card.className = "draft";
       card.id = `card-${channel}`;
+      card.hidden = channel !== activeChannel;
 
-      let statusBadge = isApproved
-        ? `<span class="badge badge-approved">✓ 승인됨 (Rev ${draftState.revision})</span>`
-        : `<span class="badge badge-draft">초안 / 미승인 (Rev ${draftState.revision})</span>`;
-      if (!isValid) {
-        statusBadge += ` <span class="badge badge-invalid">규격 위반 ${draftState.validation.failures.length}건</span>`;
-      }
+      const appliedStyleId = (currentSession.selected_style_ids || {})[channel];
+      const appliedProfile = learnedProfiles.find(p => p.profile_id === appliedStyleId);
+      const st = channelStatus(draftState);
 
-      let validationHtml = "";
-      if (!isValid && draftState.validation.failures.length > 0) {
-        validationHtml = `<div class="alert alert-warning" style="margin-bottom: 4px;">
-          <strong>⚠️ 서버 검증 위반 항목:</strong><ul style="margin: 6px 0 0 18px; padding: 0;">
-            ${draftState.validation.failures.map(f => `<li><b>${escapeHtml(f.rule_violated)}:</b> ${escapeHtml(f.reason)}</li>`).join("")}
-          </ul>
+      let notesHtml = "";
+      if (!isValid && (validation.failures || []).length > 0) {
+        notesHtml += `<div class="note note-error">
+          <strong>승인하려면 먼저 고쳐야 합니다</strong>
+          <ul>${validation.failures.map(f => `<li>${escapeHtml(f.reason)}</li>`).join("")}</ul>
         </div>`;
       }
-
-      let dispatchHtml = "";
+      const warnList = validation.warnings || [];
+      if (warnList.length > 0) {
+        notesHtml += `<div class="note note-warning">
+          <strong>메모에 없는 내용일 수 있습니다. 올리기 전에 확인해 주세요</strong>
+          <ul>${warnList.map(f => `<li>${escapeHtml(f.reason)}</li>`).join("")}</ul>
+        </div>`;
+      }
       if (dispatchResult) {
-        dispatchHtml = `<div class="alert alert-success" style="margin-bottom: 4px;">
-          <strong>🚀 외부 전송 완료:</strong> <code>${escapeHtml(JSON.stringify(dispatchResult))}</code>
+        notesHtml += `<div class="note note-success">
+          <strong>전송했습니다</strong>
+          <details><summary>전송 결과 보기</summary><code>${escapeHtml(JSON.stringify(dispatchResult, null, 2))}</code></details>
         </div>`;
       }
 
-      const fieldsHtml = buildChannelFieldsHtml(channel, draftState.spec);
+      const cardImgUrl = `/api/campaigns/${encodeURIComponent(sessionId)}/channels/${encodeURIComponent(channel)}/card-image`;
+      const sourceImgUrl = `/api/campaigns/${encodeURIComponent(sessionId)}/image`;
+      const previewCardUrl = `${cardImgUrl}?inline=1&rev=${encodeURIComponent(String(draftState.revision))}&t=${Date.now()}`;
+      const slidesNote = (channel === "instagram" || channel === "x_twitter") ? "전송할 때 두 장이 함께 올라갑니다" : "";
+
+      const cardNews = draftState.card_news || {
+        main_title: "매장 공지 안내",
+        subtitle_banner: currentSession?.vision_result?.primary_subject || "OFFICIAL NOTICE",
+        boxes: [],
+        footnotes: [],
+        footer_brand: (appliedProfile && appliedProfile.account_handle) || "OFFICIAL TCG STORE",
+        theme: "cyber_cyan"
+      };
+      const boxesText = (cardNews.boxes || []).map(b => `${b.label} : ${b.value}`).join("\n");
+      const footnotesText = (cardNews.footnotes || []).join(" | ");
+      const themeSelectHtml = CARD_THEMES.map(([val, lbl]) =>
+        `<option value="${val}" ${cardNews.theme === val ? "selected" : ""}>${lbl}</option>`
+      ).join("");
 
       card.innerHTML = `
-        <div class="draft-header">
-          <strong>${CHANNEL_LABELS[channel] || channel}</strong>
-          <div>${statusBadge}</div>
+        <div class="draft-head">
+          <h3>${CHANNEL_LABELS[channel] || channel}</h3>
+          <div class="draft-meta">
+            ${appliedProfile ? `<span>${escapeHtml(appliedProfile.account_handle)} 스타일</span>` : ""}
+            <span>수정 ${draftState.revision}회차</span>
+            <span class="status"><span class="dot ${st.dot}"></span>${st.text}</span>
+          </div>
         </div>
-        <div id="alert-${channel}"></div>
-        ${validationHtml}
-        ${dispatchHtml}
-        <div class="fields-area" data-channel="${channel}">
-          ${fieldsHtml}
+        <div class="draft-notes"><div id="alert-${channel}"></div>${notesHtml}</div>
+        <div class="draft-grid">
+          <div>
+            <div class="fields-area" data-channel="${channel}">
+              ${buildChannelFieldsHtml(channel, draftState.spec)}
+            </div>
+            <div class="regen">
+              <input type="text" id="regen-note-${channel}" placeholder="바꾸고 싶은 점 (예: 더 짧게, 주차 안내 추가)" aria-label="다시 쓸 때 요청사항" />
+              <button type="button" class="btn" id="regen-btn-${channel}">다시 쓰기</button>
+            </div>
+          </div>
+          <div>
+            <div class="preview-title">
+              <span class="label">이미지</span>
+              <span class="hint">${slidesNote}</span>
+            </div>
+            <div class="slides">
+              <figure class="slide">
+                <img src="${sourceImgUrl}" alt="원본 사진" />
+                <figcaption>1. 원본 사진</figcaption>
+              </figure>
+              <figure class="slide">
+                <img src="${previewCardUrl}" alt="공지 카드 이미지" />
+                <figcaption>2. 공지 카드</figcaption>
+              </figure>
+            </div>
+            <div class="card-tools">
+              <div class="card-prompt">
+                <input type="text" id="card-prompt-${channel}" placeholder="카드 수정 요청 (예: 문구 더 짧게, 화이트로)" aria-label="공지 카드 수정 요청" />
+                <button type="button" class="btn" id="card-prompt-btn-${channel}">카드 수정</button>
+              </div>
+              <details class="card-edit">
+                <summary>카드 문구 직접 고치기</summary>
+                <div class="card-edit-body card-editor-area">
+                  <div class="row-2">
+                    <div class="field">
+                      <label>제목</label>
+                      <input type="text" data-card-field="main_title" value="${escapeAttr(cardNews.main_title)}" />
+                    </div>
+                    <div class="field">
+                      <label>색상</label>
+                      <select data-card-field="theme">${themeSelectHtml}</select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>부제</label>
+                    <input type="text" data-card-field="subtitle_banner" value="${escapeAttr(cardNews.subtitle_banner)}" />
+                  </div>
+                  <div class="field">
+                    <div class="field-label"><label>항목</label><span class="hint">한 줄에 「항목 : 내용」, 두 칸은 「값1 / 값2」</span></div>
+                    <textarea data-card-field="boxes" rows="4">${escapeHtml(boxesText)}</textarea>
+                  </div>
+                  <div class="row-2">
+                    <div class="field">
+                      <div class="field-label"><label>하단 참고</label><span class="hint">| 로 구분</span></div>
+                      <input type="text" data-card-field="footnotes" value="${escapeAttr(footnotesText)}" />
+                    </div>
+                    <div class="field">
+                      <label>매장 표기</label>
+                      <input type="text" data-card-field="footer_brand" value="${escapeAttr(cardNews.footer_brand)}" />
+                    </div>
+                  </div>
+                  <button type="button" class="btn" id="card-save-btn-${channel}">카드에 반영</button>
+                </div>
+              </details>
+            </div>
+          </div>
         </div>
-        <div style="display:flex; gap:6px; align-items:center;">
-          <input type="text" id="regen-note-${channel}" placeholder="이 채널만 재생성 시 추가 지침 (선택)" style="margin-bottom:0; font-size:0.82rem;" />
-          <button type="button" class="btn btn-outline" id="regen-btn-${channel}" style="white-space:nowrap;">🔄 재작성</button>
-        </div>
-        <div class="action-row">
-          <button type="button" class="btn btn-secondary" id="save-btn-${channel}">💾 수정 저장 & 재검증</button>
-          ${
-            isApproved
-              ? `<button type="button" class="btn btn-outline" id="unapprove-btn-${channel}">승인 해제</button>`
-              : `<button type="button" class="btn btn-success" id="approve-btn-${channel}" ${!isValid ? "disabled" : ""}>✅ 문안 승인</button>`
-          }
-          <button type="button" class="btn btn-primary" id="dispatch-btn-${channel}" style="width:auto; margin-left:auto;" ${!isApproved ? "disabled" : ""}>
-            📤 외부 발행/전송
-          </button>
+        <div class="actions">
+          <button type="button" class="btn btn-quiet" id="copy-btn-${channel}">글 복사</button>
+          <a href="${cardImgUrl}" class="btn btn-quiet" download>카드 이미지 받기</a>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="save-btn-${channel}">저장</button>
+          ${isApproved
+            ? `<button type="button" class="btn" id="unapprove-btn-${channel}">승인 취소</button>`
+            : `<button type="button" class="btn btn-approve" id="approve-btn-${channel}" ${!isValid ? "disabled" : ""}>승인</button>`}
+          <button type="button" class="btn btn-primary" id="dispatch-btn-${channel}" ${!isApproved ? `disabled title="승인한 뒤에 전송할 수 있습니다"` : ""}>전송</button>
         </div>
       `;
 
-      // Attach automatic live revocation notice if approved user edits an input
-      const inputs = card.querySelectorAll(".fields-area input, .fields-area textarea, .fields-area select");
-      inputs.forEach(inp => {
+      updateCounter(channel, card);
+      card.querySelectorAll(".fields-area input, .fields-area textarea, .fields-area select").forEach(inp => {
         inp.addEventListener("input", () => {
+          updateCounter(channel, card);
           if (draftState.status === "approved") {
-            const localAlert = card.querySelector(`#alert-${channel}`);
-            localAlert.innerHTML = `<div class="alert alert-warning">문안이 수정되었습니다. 저장 시 승인 상태가 자동으로 해제됩니다.</div>`;
+            card.querySelector(`#alert-${channel}`).innerHTML =
+              `<div class="note note-warning" style="margin-bottom:8px;">내용을 고쳤습니다. 저장하면 승인이 취소됩니다.</div>`;
             const dispBtn = card.querySelector(`#dispatch-btn-${channel}`);
             if (dispBtn) dispBtn.disabled = true;
           }
         });
       });
 
+      card.querySelector(`#card-prompt-btn-${channel}`).addEventListener("click", () => modifyCardNewsByPrompt(sessionId, channel, card));
+      card.querySelector(`#card-save-btn-${channel}`).addEventListener("click", () => saveCardNewsDirect(sessionId, channel, card));
+      card.querySelector(`#copy-btn-${channel}`).addEventListener("click", () => copyChannelText(channel, card));
       card.querySelector(`#save-btn-${channel}`).addEventListener("click", () => saveChannelEdit(sessionId, channel, card));
       card.querySelector(`#regen-btn-${channel}`).addEventListener("click", () => regenerateChannel(sessionId, channel, card));
 
       const approveBtn = card.querySelector(`#approve-btn-${channel}`);
-      if (approveBtn) {
-        approveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, true));
-      }
+      if (approveBtn) approveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, true));
       const unapproveBtn = card.querySelector(`#unapprove-btn-${channel}`);
-      if (unapproveBtn) {
-        unapproveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, false));
-      }
+      if (unapproveBtn) unapproveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, false));
       card.querySelector(`#dispatch-btn-${channel}`).addEventListener("click", () => dispatchChannel(sessionId, channel, card));
 
       return card;
     }
 
+    function showCardError(card, channel, message) {
+      card.querySelector(`#alert-${channel}`).innerHTML =
+        `<div class="note note-error" style="margin-bottom:8px;">${escapeHtml(message)}</div>`;
+    }
+
+    async function copyChannelText(channel, card) {
+      const p = collectChannelPayload(channel, card);
+      let text = "";
+      if (channel === "instagram") {
+        text = `${p.hook_headline}\n\n${p.body}\n\n${(p.hashtags || []).join(" ")}`.trim();
+      } else if (channel === "x_twitter") {
+        text = `${p.body}\n\n${(p.hashtags || []).join(" ")}`.trim();
+      } else if (channel === "dcinside") {
+        text = `[제목] ${p.title}\n\n${p.body}`;
+      } else if (channel === "naver_cafe") {
+        text = `${p.head_tag} ${p.subject}\n\n${p.plain_body_preview}\n\n태그: ${(p.search_tags || []).join(", ")}`;
+      } else if (channel === "kakao_channel") {
+        text = `[${p.title}]\n\n${p.body}\n\n${p.button_label}`;
+      } else if (channel === "naver_place") {
+        text = `${p.title}\n\n${p.body}\n\n키워드: ${(p.keywords || []).join(", ")}`;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("글을 복사했습니다.");
+      } catch (err) {
+        showToast("복사하지 못했습니다. 글을 직접 선택해 복사해 주세요.");
+      }
+    }
+
     function buildChannelFieldsHtml(channel, spec) {
       if (channel === "instagram") {
         return `
-          <label>후킹 헤드라인 (첫 줄)</label>
-          <input type="text" data-field="hook_headline" value="${escapeAttr(spec.hook_headline)}" />
-          <label>본문</label>
-          <textarea data-field="body" rows="5">${escapeHtml(spec.body)}</textarea>
-          <label>해시태그 (공백 또는 콤마 구분, 10~15개)</label>
-          <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
+          <div class="field">
+            <label>첫 줄</label>
+            <input type="text" data-field="hook_headline" value="${escapeAttr(spec.hook_headline)}" />
+          </div>
+          <div class="field">
+            <label>본문</label>
+            <textarea data-field="body" rows="11">${escapeHtml(spec.body)}</textarea>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>해시태그</label><span class="hint">게시물당 최대 5개</span></div>
+            <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
+            <div class="counter" data-counter></div>
+          </div>
         `;
       }
       if (channel === "x_twitter") {
-        const fullLen = `${spec.body}\n\n${(spec.hashtags || []).join(" ")}`.trim().length;
         return `
-          <label>트윗 본문</label>
-          <textarea data-field="body" rows="4">${escapeHtml(spec.body)}</textarea>
-          <label>해시태그 (2~3개)</label>
-          <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
-          <div class="char-counter">현재 전체 글자 수: ${fullLen} / 280자</div>
+          <div class="field">
+            <label>본문</label>
+            <textarea data-field="body" rows="7">${escapeHtml(spec.body)}</textarea>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>해시태그</label><span class="hint">2~3개</span></div>
+            <input type="text" data-field="hashtags" value="${escapeAttr((spec.hashtags || []).join(" "))}" />
+            <div class="counter" data-counter></div>
+          </div>
         `;
       }
       if (channel === "dcinside") {
         return `
-          <label>타겟 갤러리 ID</label>
-          <input type="text" data-field="gallery_id" value="${escapeAttr(spec.gallery_id)}" />
-          <label>제목 (최대 38자, 자연스러운 갤러리 톤)</label>
-          <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
-          <label>본문 (음슴체/반말, 이모지 및 광고 금지어 배제)</label>
-          <textarea data-field="body" rows="5">${escapeHtml(spec.body)}</textarea>
+          <div class="row-2">
+            <div class="field">
+              <label>갤러리 ID</label>
+              <input type="text" data-field="gallery_id" value="${escapeAttr(spec.gallery_id)}" />
+            </div>
+            <div></div>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>제목</label><span class="hint">38자까지</span></div>
+            <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
+          </div>
+          <div class="field">
+            <div class="field-label"><label>본문</label><span class="hint">반말, 이모지 없이</span></div>
+            <textarea data-field="body" rows="9">${escapeHtml(spec.body)}</textarea>
+          </div>
+        `;
+      }
+      if (channel === "kakao_channel") {
+        return `
+          <div class="field">
+            <div class="field-label"><label>제목</label><span class="hint">35자까지</span></div>
+            <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
+          </div>
+          <div class="field">
+            <label>본문</label>
+            <textarea data-field="body" rows="9">${escapeHtml(spec.body)}</textarea>
+            <div class="counter" data-counter></div>
+          </div>
+          <div class="field">
+            <label>버튼 문구</label>
+            <input type="text" data-field="button_label" value="${escapeAttr(spec.button_label)}" />
+          </div>
+        `;
+      }
+      if (channel === "naver_place") {
+        return `
+          <div class="field">
+            <div class="field-label"><label>제목</label><span class="hint">35자까지</span></div>
+            <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
+          </div>
+          <div class="field">
+            <label>본문</label>
+            <textarea data-field="body" rows="9">${escapeHtml(spec.body)}</textarea>
+            <div class="counter" data-counter></div>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>검색 키워드</label><span class="hint">쉼표로 구분</span></div>
+            <input type="text" data-field="keywords" value="${escapeAttr((spec.keywords || []).join(", "))}" />
+          </div>
         `;
       }
       if (channel === "naver_cafe") {
-        const plainLen = (spec.plain_body_preview || "").trim().length;
         return `
-          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-            <div>
+          <div class="row-3">
+            <div class="field">
               <label>말머리</label>
               <input type="text" data-field="head_tag" value="${escapeAttr(spec.head_tag)}" />
             </div>
-            <div>
-              <label>Club ID</label>
+            <div class="field">
+              <label>카페 ID</label>
               <input type="text" data-field="club_id" value="${escapeAttr(spec.club_id)}" />
             </div>
-            <div>
-              <label>Menu ID</label>
+            <div class="field">
+              <label>게시판 ID</label>
               <input type="number" data-field="menu_id" value="${escapeAttr(String(spec.menu_id))}" />
             </div>
           </div>
-          <label>게시글 제목</label>
-          <input type="text" data-field="subject" value="${escapeAttr(spec.subject)}" />
-          <label>순수 텍스트 본문 (최소 300자 이상)</label>
-          <textarea data-field="plain_body_preview" rows="5">${escapeHtml(spec.plain_body_preview)}</textarea>
-          <div class="char-counter">현재 본문 글자 수: ${plainLen}자 (최소 300자)</div>
-          <label>네이버 에디터 HTML 본문</label>
-          <textarea data-field="html_body" rows="4">${escapeHtml(spec.html_body)}</textarea>
-          <label>검색 태그 ('#' 제외, 콤마 구분 5~10개)</label>
-          <input type="text" data-field="search_tags" value="${escapeAttr((spec.search_tags || []).join(", "))}" />
+          <div class="field">
+            <label>제목</label>
+            <input type="text" data-field="subject" value="${escapeAttr(spec.subject)}" />
+          </div>
+          <div class="field">
+            <label>본문</label>
+            <textarea data-field="plain_body_preview" rows="10">${escapeHtml(spec.plain_body_preview)}</textarea>
+            <div class="counter" data-counter></div>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>본문 HTML</label><span class="hint">카페에 실제로 올라가는 서식</span></div>
+            <textarea data-field="html_body" rows="4" spellcheck="false">${escapeHtml(spec.html_body)}</textarea>
+          </div>
+          <div class="field">
+            <div class="field-label"><label>검색 태그</label><span class="hint"># 없이 쉼표로 구분, 5~10개</span></div>
+            <input type="text" data-field="search_tags" value="${escapeAttr((spec.search_tags || []).join(", "))}" />
+          </div>
         `;
       }
       return "";
@@ -612,29 +1314,32 @@
         return el ? el.value : "";
       };
       if (channel === "instagram") {
-        const rawTags = getVal("hashtags").split(/[\s,]+/).filter(Boolean);
         return {
           hook_headline: getVal("hook_headline"),
           body: getVal("body"),
-          hashtags: rawTags
+          hashtags: getVal("hashtags").split(/[\s,]+/).filter(Boolean)
         };
       }
       if (channel === "x_twitter") {
-        const rawTags = getVal("hashtags").split(/[\s,]+/).filter(Boolean);
         return {
           body: getVal("body"),
-          hashtags: rawTags
+          hashtags: getVal("hashtags").split(/[\s,]+/).filter(Boolean)
         };
       }
       if (channel === "dcinside") {
+        return { gallery_id: getVal("gallery_id"), title: getVal("title"), body: getVal("body") };
+      }
+      if (channel === "kakao_channel") {
+        return { title: getVal("title"), body: getVal("body"), button_label: getVal("button_label") };
+      }
+      if (channel === "naver_place") {
         return {
-          gallery_id: getVal("gallery_id"),
           title: getVal("title"),
-          body: getVal("body")
+          body: getVal("body"),
+          keywords: getVal("keywords").split(",").map(s => s.trim()).filter(Boolean)
         };
       }
       if (channel === "naver_cafe") {
-        const rawTags = getVal("search_tags").split(",").map(s => s.trim()).filter(Boolean);
         return {
           club_id: getVal("club_id"),
           menu_id: parseInt(getVal("menu_id") || "42", 10),
@@ -642,7 +1347,7 @@
           subject: getVal("subject"),
           plain_body_preview: getVal("plain_body_preview"),
           html_body: getVal("html_body"),
-          search_tags: rawTags
+          search_tags: getVal("search_tags").split(",").map(s => s.trim()).filter(Boolean)
         };
       }
       return {};
@@ -652,7 +1357,7 @@
       const payload = collectChannelPayload(channel, card);
       const btn = card.querySelector(`#save-btn-${channel}`);
       btn.disabled = true;
-      btn.textContent = "저장 중...";
+      btn.textContent = "저장 중";
       try {
         const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}`, {
           method: "PUT",
@@ -660,65 +1365,138 @@
           body: JSON.stringify(payload)
         });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.detail || "수정 저장에 실패했습니다.");
+        if (!res.ok) throw new Error(body.detail || "저장하지 못했습니다.");
         currentSession.drafts[channel] = body;
         delete currentSession.dispatch_results[channel];
         replaceChannelCard(sessionId, channel);
+        showToast("저장했습니다.");
       } catch (err) {
-        const alertEl = card.querySelector(`#alert-${channel}`);
-        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
-      } finally {
+        showCardError(card, channel, err.message);
         btn.disabled = false;
-        btn.textContent = "💾 수정 저장 & 재검증";
+        btn.textContent = "저장";
       }
     }
 
     async function regenerateChannel(sessionId, channel, card) {
       const noteEl = card.querySelector(`#regen-note-${channel}`);
       const feedbackNote = noteEl ? noteEl.value.trim() : "";
+      const styleSel = $(`style-select-${channel}`);
+      const styleProfileId = styleSel ? styleSel.value : null;
+
       const btn = card.querySelector(`#regen-btn-${channel}`);
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner"></span> 재생성 중...`;
+      btn.innerHTML = `<span class="spinner"></span> 다시 쓰는 중`;
       try {
         const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/regenerate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ feedback_note: feedbackNote })
+          body: JSON.stringify({ feedback_note: feedbackNote, style_profile_id: styleProfileId })
         });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.detail || "채널 재생성에 실패했습니다.");
+        if (!res.ok) throw new Error(body.detail || "다시 쓰지 못했습니다.");
+        currentSession.drafts[channel] = body;
+        if (styleProfileId) currentSession.selected_style_ids[channel] = styleProfileId;
+        delete currentSession.dispatch_results[channel];
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        showCardError(card, channel, err.message);
+        btn.disabled = false;
+        btn.textContent = "다시 쓰기";
+      }
+    }
+
+    async function modifyCardNewsByPrompt(sessionId, channel, card) {
+      const promptEl = card.querySelector(`#card-prompt-${channel}`);
+      const promptText = promptEl ? promptEl.value.trim() : "";
+      if (!promptText) {
+        promptEl.focus();
+        showToast("카드를 어떻게 바꿀지 적어 주세요.");
+        return;
+      }
+
+      const btn = card.querySelector(`#card-prompt-btn-${channel}`);
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> 수정 중`;
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/card-news/prompt`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: promptText })
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "카드를 수정하지 못했습니다.");
         currentSession.drafts[channel] = body;
         delete currentSession.dispatch_results[channel];
         replaceChannelCard(sessionId, channel);
       } catch (err) {
-        const alertEl = card.querySelector(`#alert-${channel}`);
-        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+        showCardError(card, channel, err.message);
         btn.disabled = false;
-        btn.textContent = "🔄 재작성";
+        btn.textContent = "카드 수정";
+      }
+    }
+
+    async function saveCardNewsDirect(sessionId, channel, card) {
+      const getCardVal = (f) => {
+        const el = card.querySelector(`[data-card-field="${f}"]`);
+        return el ? el.value : "";
+      };
+      const rawBoxes = getCardVal("boxes").split("\n").map(line => line.trim()).filter(Boolean);
+      const boxes = rawBoxes.map(line => {
+        const match = line.match(/^([^:：]+)\s*[:：]\s*(.+)$/);
+        if (match) return { label: match[1].trim(), value: match[2].trim() };
+        return { label: "안내", value: line };
+      });
+      if (boxes.length === 0) boxes.push({ label: "공지 안내", value: "매장 공지 참고" });
+      const footnotes = getCardVal("footnotes").split("|").map(s => s.trim()).filter(Boolean).slice(0, 3);
+
+      const payload = {
+        main_title: getCardVal("main_title").trim() || "매장 공지 안내",
+        subtitle_banner: getCardVal("subtitle_banner").trim() || "OFFICIAL NOTICE",
+        boxes: boxes.slice(0, 6),
+        footnotes: footnotes,
+        footer_brand: getCardVal("footer_brand").trim() || "OFFICIAL TCG STORE",
+        theme: getCardVal("theme") || "cyber_cyan"
+      };
+
+      const btn = card.querySelector(`#card-save-btn-${channel}`);
+      btn.disabled = true;
+      btn.textContent = "반영 중";
+      try {
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/card-news`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.detail || "카드에 반영하지 못했습니다.");
+        currentSession.drafts[channel] = body;
+        delete currentSession.dispatch_results[channel];
+        replaceChannelCard(sessionId, channel);
+      } catch (err) {
+        showCardError(card, channel, err.message);
+        btn.disabled = false;
+        btn.textContent = "카드에 반영";
       }
     }
 
     async function toggleApproval(sessionId, channel, approve) {
       const endpoint = approve ? "approve" : "unapprove";
-      const card = document.getElementById(`card-${channel}`);
+      const card = $(`card-${channel}`);
       try {
-        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/${endpoint}`, {
-          method: "POST"
-        });
+        const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/${endpoint}`, { method: "POST" });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.detail || "승인 상태 변경 실패");
+        if (!res.ok) throw new Error(body.detail || "승인 상태를 바꾸지 못했습니다.");
         currentSession.drafts[channel] = body;
         replaceChannelCard(sessionId, channel);
       } catch (err) {
-        const alertEl = card.querySelector(`#alert-${channel}`);
-        alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+        showCardError(card, channel, err.message);
       }
     }
 
     async function dispatchChannel(sessionId, channel, card) {
       const btn = card.querySelector(`#dispatch-btn-${channel}`);
       btn.disabled = true;
-      btn.innerHTML = `<span class="spinner"></span> 전송 중...`;
+      btn.innerHTML = `<span class="spinner"></span> 전송 중`;
       try {
         const res = await fetch(`/api/campaigns/${sessionId}/channels/${channel}/dispatch`, {
           method: "POST",
@@ -726,19 +1504,18 @@
           body: JSON.stringify({})
         });
         const body = await res.json();
-        if (!res.ok) throw new Error(body.detail || "외부 연동 전송 실패");
+        if (!res.ok) throw new Error(body.detail || "전송하지 못했습니다.");
         currentSession.dispatch_results[channel] = body.result;
         replaceChannelCard(sessionId, channel);
       } catch (err) {
-        const alertEl = card.querySelector(`#alert-${channel}`);
-        alertEl.innerHTML = `<div class="alert alert-error"><strong>전송 실패:</strong> ${escapeHtml(err.message)}</div>`;
+        showCardError(card, channel, `전송하지 못했습니다. ${err.message}`);
         btn.disabled = false;
-        btn.textContent = "📤 외부 발행/전송";
+        btn.textContent = "전송";
       }
     }
 
     function replaceChannelCard(sessionId, channel) {
-      const oldCard = document.getElementById(`card-${channel}`);
+      const oldCard = $(`card-${channel}`);
       const newCard = buildChannelCard(
         sessionId,
         channel,
@@ -746,6 +1523,7 @@
         currentSession.dispatch_results[channel]
       );
       oldCard.replaceWith(newCard);
+      renderChannelTabs();
     }
 
     function escapeHtml(str) {
@@ -756,10 +1534,11 @@
     }
 
     function escapeAttr(str) {
-      return escapeHtml(str).replace(/"/g, "&quot;");
+      return escapeHtml(str).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     loadServerHealth();
+    loadStyleProfiles();
   </script>
 </body>
 </html>
