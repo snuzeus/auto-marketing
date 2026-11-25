@@ -1003,3 +1003,26 @@ async def test_naver_confirm_mode_requires_telegram(tmp_path: Path) -> None:
             club_id="1", menu_id=2, head_tag="", subject="s", html_body="b",
             search_tags=[], image_path=str(img), approval_mode="telegram_confirm_api",
         )
+
+
+async def test_postiz_media_survives_new_client_and_rejects_unknown(tmp_path: Path) -> None:
+    img = tmp_path / "m.jpg"
+    img.write_bytes(_make_jpeg_bytes())
+    posted: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/integrations"):
+            return httpx.Response(200, json=[{"id": "int_x", "identifier": "x"}])
+        if request.url.path.endswith("/upload"):
+            return httpx.Response(200, json={"id": "shared_media", "path": "http://p/u.jpg"})
+        posted.append(json.loads(request.read().decode("utf-8")))
+        return httpx.Response(200, json=[{"postId": "p1"}])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        base = "http://localhost:4007/api/public/v1"
+        await PostizClient(base, "k", http_client=http_client).upload_media(str(img), "alt")
+        second = PostizClient(base, "k", http_client=http_client)
+        await second.create_draft_post("x_twitter", "t", ["shared_media"])
+        assert posted[0]["posts"][0]["value"][0]["image"][0]["path"] == "http://p/u.jpg"
+        with pytest.raises(PostizIntegrationError, match="업로드 정보를 알 수 없는"):
+            await second.create_draft_post("x_twitter", "t", ["never_uploaded"])

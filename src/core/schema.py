@@ -155,6 +155,14 @@ class InstagramPostSpec(BaseModel):
         return f"{self.hook_headline}\n\n{self.body}\n\n{tags_str}".strip()
 
 
+def _split_last_token(text: str) -> tuple[str, str, str]:
+    """Split `text` into (head, separator, last whitespace-delimited token)."""
+    parts = text.rsplit(maxsplit=1)
+    if len(parts) < 2:
+        return "", "", text.strip()
+    return text[: len(text) - len(parts[1])], " ", parts[1]
+
+
 class XTwitterPostSpec(BaseModel):
     body: str = Field(description="후킹 문장과 본문이 결합된 텍스트 (해시태그 제외)")
     hashtags: list[str] = Field(default_factory=list, description="핵심 해시태그 2~3개")
@@ -162,6 +170,20 @@ class XTwitterPostSpec(BaseModel):
         default=0,
         description="X 가중치 기준 전체 글자 수 (한글 1자=2, 영문/숫자/공백=1, URL=23). 반드시 280 이하",
     )
+
+    @model_validator(mode="after")
+    def strip_duplicate_trailing_tags(self) -> XTwitterPostSpec:
+        # 모델이 본문 끝에도 해시태그를 적으면 `full_tweet`에서 두 번 붙으므로 본문 쪽을 지운다.
+        # `hashtags`에 없는 태그나 문장 속 태그는 건드리지 않는다.
+        listed = {t.lstrip("#").casefold() for t in self.hashtags}
+        body = self.body.rstrip()
+        while True:
+            head, _, last = _split_last_token(body)
+            if not (last.startswith("#") and last[1:].casefold() in listed):
+                break
+            body = head.rstrip()
+        self.body = body
+        return self
 
     @property
     def full_tweet(self) -> str:
@@ -187,6 +209,15 @@ class DCInsidePostSpec(BaseModel):
     contains_forbidden_words: bool = Field(default=False)
 
 
+def strip_head_tag(subject: str, head_tag: str) -> str:
+    """Remove `head_tag` from the start of `subject`; it is prepended again when publishing."""
+    result = subject.strip()
+    tag = head_tag.strip()
+    while tag and result.startswith(tag) and result[len(tag) :].strip():
+        result = result[len(tag) :].strip()
+    return result
+
+
 class NaverCafePostSpec(BaseModel):
     club_id: str = Field(description="네이버 카페 고유 clubid")
     menu_id: int = Field(description="네이버 카페 게시판 menuid")
@@ -205,6 +236,11 @@ class NaverCafePostSpec(BaseModel):
         max_length=10,
         description="'#' 기호를 제외한 네이버 카페 하단 검색 태그 5~10개",
     )
+
+    @model_validator(mode="after")
+    def strip_duplicate_head_tag(self) -> NaverCafePostSpec:
+        self.subject = strip_head_tag(self.subject, self.head_tag)
+        return self
 
 
 class KakaoChannelPostSpec(BaseModel):

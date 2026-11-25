@@ -3,7 +3,7 @@ from __future__ import annotations
 import mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import httpx
 
@@ -33,6 +33,10 @@ class PostizClient:
       `GET /integrations` by platform identifier (`x`, `instagram`).
     """
 
+    # media_id -> {"path", "alt"}; shared so a later client instance (e.g. one per MCP call)
+    # can still attach media uploaded earlier in this process.
+    _media: ClassVar[dict[str, dict[str, str]]] = {}
+
     def __init__(
         self,
         base_url: str,
@@ -46,8 +50,6 @@ class PostizClient:
         self.instagram_channel_id = instagram_channel_id.strip()
         self.x_channel_id = x_channel_id.strip()
         self._http = http_client
-        # media_id -> {"path": ..., "alt": ...}; `POST /posts` needs both id and path.
-        self._media: dict[str, dict[str, str]] = {}
         self._integrations_cache: list[dict[str, Any]] | None = None
 
     # ------------------------------------------------------------------ helpers
@@ -170,8 +172,12 @@ class PostizClient:
 
         images: list[dict[str, str]] = []
         for media_id in media_ids:
-            known = self._media.get(media_id, {})
-            image: dict[str, str] = {"id": media_id, "path": known.get("path", "")}
+            known = self._media.get(media_id)
+            if not known or not known.get("path"):
+                raise PostizIntegrationError(
+                    f"업로드 정보를 알 수 없는 media_id입니다({media_id}). 이미지를 다시 업로드하세요."
+                )
+            image: dict[str, str] = {"id": media_id, "path": known["path"]}
             if known.get("alt"):
                 image["alt"] = known["alt"]
             images.append(image)

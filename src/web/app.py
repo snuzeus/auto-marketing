@@ -28,6 +28,7 @@ from src.core.card_renderer import build_default_card_news_spec, render_notice_c
 from src.core.config_loader import (
     ALL_SUPPORTED_CHANNELS,
     AppSettings,
+    apply_naver_cafe_target,
     load_app_settings,
     load_personas_config,
     load_personas_raw,
@@ -489,6 +490,8 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
                 status_code=502, detail=f"AI 모델 호출 중 오류가 발생했습니다: {exc}"
             ) from exc
 
+        apply_naver_cafe_target(post_output.naver_cafe, app_store.get_settings())
+
         drafts: dict[ChannelType, ChannelDraftState] = {}
         for ch in enabled_channels:
             spec = getattr(post_output, ch)
@@ -633,6 +636,13 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=502, detail=f"'{channel}' 채널 재생성 결과가 비어 있습니다."
             )
+
+        if isinstance(new_spec, NaverCafePostSpec):
+            apply_naver_cafe_target(new_spec, app_store.get_settings())
+            prev = session.drafts[channel].spec if channel in session.drafts else None
+            # 사용자가 직접 바꿔 저장한 카페/게시판은 다시 쓰기 후에도 유지한다.
+            if isinstance(prev, NaverCafePostSpec) and prev.club_id != "12345678":
+                new_spec.club_id, new_spec.menu_id = prev.club_id, prev.menu_id
 
         ch_failures = validate_single_channel_deterministic(channel, new_spec, personas_cfg)
         report = ValidationReport(
@@ -1118,15 +1128,16 @@ async def _dispatch_postiz_with_notice_card(
     store: CampaignStore,
 ) -> dict[str, Any]:
     """Upload slide 1 (source photo) + slide 2 (rendered notice card PNG) and create Postiz draft."""
-    if not session.postiz_media_id:
-        media_res = await dispatcher.execute_tool(
-            "upload_media",
-            {
-                "file_path": session.image_path,
-                "alt_text": session.vision_result.suggested_alt_text,
-            },
-        )
-        session.postiz_media_id = str(media_res["media_id"])
+    # 매번 다시 업로드한다: 게시물 생성에는 media_id와 path가 모두 필요하고, 요청마다 새 클라이언트가
+    # 만들어지므로 이전에 저장한 media_id만으로는 path를 알 수 없다.
+    media_res = await dispatcher.execute_tool(
+        "upload_media",
+        {
+            "file_path": session.image_path,
+            "alt_text": session.vision_result.suggested_alt_text,
+        },
+    )
+    session.postiz_media_id = str(media_res["media_id"])
 
     card_path = _save_channel_notice_card_file(session, channel, store)
     card_media_res = await dispatcher.execute_tool(

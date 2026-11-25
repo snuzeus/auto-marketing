@@ -13,6 +13,8 @@ from typing import Any
 import httpx
 import pyperclip
 
+from src.core.schema import strip_head_tag
+
 NAVER_CAFE_API_BASE = "https://openapi.naver.com/v1/cafe"
 NAVER_OAUTH_TOKEN_URL = "https://nid.naver.com/oauth2.0/token"
 TELEGRAM_API_BASE = "https://api.telegram.org"
@@ -114,7 +116,9 @@ class NaverCafeClient:
         search_tags: list[str],
     ) -> dict[str, str]:
         """Encode `subject` and `content` per Naver Cafe Open API URL-encoding rules."""
-        full_subject = f"{head_tag} {subject}".strip() if head_tag else subject.strip()
+        # 직접 수정한 제목에 말머리가 남아 있어도 한 번만 붙도록 한다.
+        subject = strip_head_tag(subject, head_tag)
+        full_subject = f"{head_tag} {subject}".strip() if head_tag else subject
         tags_footer = (
             "<br><br><p><b>검색 키워드:</b> " + ", ".join(search_tags) + "</p>"
             if search_tags

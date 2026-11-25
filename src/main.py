@@ -16,6 +16,7 @@ from src.agents.vision_agent import VisionAgent
 from src.core.card_renderer import render_notice_card_png
 from src.core.config_loader import (
     AppSettings,
+    apply_naver_cafe_target,
     load_app_settings,
     load_personas_config,
     load_personas_raw,
@@ -171,6 +172,7 @@ async def run_pipeline(
         max_attempts=3,
     )
 
+    apply_naver_cafe_target(post_output.naver_cafe, app_settings)
     post_output = apply_cli_overrides_to_output(
         post_output,
         gallery=gallery,

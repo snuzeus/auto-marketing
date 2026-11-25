@@ -189,3 +189,17 @@ def resolve_enabled_channels(
         )
         raise ValueError(msg)
     return resolved
+
+
+def apply_naver_cafe_target(spec: Any, settings: AppSettings) -> None:
+    """Override the draft's cafe/board with `.env` values (the model only knows placeholder IDs).
+
+    No-op while `NAVER_CAFE_CLUB_ID` is unset or still the `.env.example` placeholder.
+    """
+    club_id = settings.naver_cafe_club_id.strip()
+    if spec is None or not club_id or club_id == "12345678":
+        return
+    spec.club_id = club_id
+    if settings.naver_cafe_menu_id > 0:
+        spec.menu_id = settings.naver_cafe_menu_id
+

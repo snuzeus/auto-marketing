@@ -310,3 +310,54 @@ def test_history_returns_recent_approved_texts_for_same_channel_and_category(tmp
         "헤드라인 a\n\n오래된 승인본"
     ]
     assert repo.list_approved_examples("x_twitter", "tcg_product_release") == []
+
+
+def test_x_body_trailing_hashtags_are_not_duplicated() -> None:
+    from src.core.schema import XTwitterPostSpec
+
+    spec = XTwitterPostSpec(
+        body="입고 안내\n\n구매 제한: 인당 1개\n\n#리프트바운드 #T1",
+        hashtags=["#리프트바운드", "#T1"],
+    )
+    assert spec.body == "입고 안내\n\n구매 제한: 인당 1개"
+    assert spec.full_tweet.count("#T1") == 1
+
+    # 목록에 없는 태그와 문장 속 태그는 보존한다.
+    kept = XTwitterPostSpec(body="#T1 번들 입고 #한정", hashtags=["#T1"])
+    assert kept.body == "#T1 번들 입고 #한정"
+
+
+def test_naver_cafe_target_comes_from_env_settings() -> None:
+    from types import SimpleNamespace
+
+    from src.core.config_loader import AppSettings, apply_naver_cafe_target
+
+    spec = SimpleNamespace(club_id="12345678", menu_id=42)
+    apply_naver_cafe_target(spec, AppSettings(naver_cafe_club_id="12345678", naver_cafe_menu_id=7))
+    assert (spec.club_id, spec.menu_id) == ("12345678", 42)  # placeholder -> untouched
+
+    apply_naver_cafe_target(spec, AppSettings(naver_cafe_club_id="555", naver_cafe_menu_id=7))
+    assert (spec.club_id, spec.menu_id) == ("555", 7)
+
+
+def test_naver_cafe_head_tag_is_not_duplicated() -> None:
+    from src.core.schema import NaverCafePostSpec
+    from src.integrations.naver_cafe_client import NaverCafeClient
+
+    spec = NaverCafePostSpec(
+        club_id="1",
+        menu_id=1,
+        head_tag="[입고공지]",
+        subject="[입고공지] 번들 입고 안내",
+        html_body="<p>본문</p>",
+        plain_body_preview="본문",
+        search_tags=["a", "b", "c", "d", "e"],
+    )
+    assert spec.subject == "번들 입고 안내"
+
+    encoded = NaverCafeClient.build_encoded_fields(
+        "[입고공지]", "[입고공지][입고공지] 번들", "<p>x</p>", []
+    )
+    assert encoded["raw_subject"] == "[입고공지] 번들"
+    other = NaverCafeClient.build_encoded_fields("[입고공지]", "[한정] 번들", "<p>x</p>", [])
+    assert other["raw_subject"] == "[입고공지] [한정] 번들"

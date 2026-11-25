@@ -1132,6 +1132,7 @@
       updateCounter(channel, card);
       card.querySelectorAll(".fields-area input, .fields-area textarea, .fields-area select").forEach(inp => {
         inp.addEventListener("input", () => {
+          if (inp.dataset.field) card.dataset.dirty = "1";
           updateCounter(channel, card);
           if (draftState.status === "approved") {
             card.querySelector(`#alert-${channel}`).innerHTML =
@@ -1149,7 +1150,15 @@
       card.querySelector(`#regen-btn-${channel}`).addEventListener("click", () => regenerateChannel(sessionId, channel, card));
 
       const approveBtn = card.querySelector(`#approve-btn-${channel}`);
-      if (approveBtn) approveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, true));
+      if (approveBtn) approveBtn.addEventListener("click", async () => {
+        // 고친 내용이 있으면 먼저 저장한다. 그러지 않으면 승인 후 다시 그릴 때 입력값이 사라진다.
+        if (card.dataset.dirty) {
+          approveBtn.disabled = true;
+          const saved = await saveChannelEdit(sessionId, channel, card);
+          if (!saved || (saved.validation && !saved.validation.is_valid)) return;
+        }
+        toggleApproval(sessionId, channel, true);
+      });
       const unapproveBtn = card.querySelector(`#unapprove-btn-${channel}`);
       if (unapproveBtn) unapproveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, false));
       card.querySelector(`#dispatch-btn-${channel}`).addEventListener("click", () => dispatchChannel(sessionId, channel, card));
@@ -1370,10 +1379,14 @@
         delete currentSession.dispatch_results[channel];
         replaceChannelCard(sessionId, channel);
         showToast("저장했습니다.");
+        return body;
       } catch (err) {
         showCardError(card, channel, err.message);
         btn.disabled = false;
         btn.textContent = "저장";
+        const approveBtn = card.querySelector(`#approve-btn-${channel}`);
+        if (approveBtn) approveBtn.disabled = false;
+        return null;
       }
     }
 
