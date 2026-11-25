@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -8,13 +9,29 @@ import httpx
 
 from src.agents.vision_agent import inspect_image_metadata
 
+Channel = Literal["instagram", "x_twitter"]
+
+# Postiz integration `identifier` values that belong to each logical channel.
+_IDENTIFIERS: dict[str, tuple[str, ...]] = {
+    "instagram": ("instagram", "instagram-standalone"),
+    "x_twitter": ("x",),
+}
+_PLACEHOLDER_CHANNEL_IDS = {"", "ch_insta_01", "ch_x_01"}
+
 
 class PostizIntegrationError(RuntimeError):
     """Raised when Postiz credentials are missing or the API call fails."""
 
 
 class PostizClient:
-    """Async REST client for self-hosted Postiz (Instagram & X DRAFT creation)."""
+    """Async client for the self-hosted Postiz Public API (`/public/v1`).
+
+    * Auth: raw API key in the `Authorization` header (no `Bearer` prefix).
+    * Upload: `POST /upload` (multipart field `file`) -> `{id, path}`.
+    * Posts: `POST /posts` with `type="draft"` and nested `posts[].value[].image`.
+    * Channel IDs: taken from env when set, otherwise resolved from
+      `GET /integrations` by platform identifier (`x`, `instagram`).
+    """
 
     def __init__(
         self,
@@ -29,34 +46,80 @@ class PostizClient:
         self.instagram_channel_id = instagram_channel_id.strip()
         self.x_channel_id = x_channel_id.strip()
         self._http = http_client
+        # media_id -> {"path": ..., "alt": ...}; `POST /posts` needs both id and path.
+        self._media: dict[str, dict[str, str]] = {}
+        self._integrations_cache: list[dict[str, Any]] | None = None
 
-    def _ensure_configured(self, channel: Literal["instagram", "x_twitter"] | None = None) -> None:
+    # ------------------------------------------------------------------ helpers
+    def _ensure_configured(self) -> None:
         if not self.base_url or not self.api_key or self.api_key == "pz_live_...":
             msg = (
                 "Postiz API가 설정되지 않았습니다 (POSTIZ_BASE_URL, POSTIZ_API_KEY 환경변수를 확인하세요)."
             )
             raise PostizIntegrationError(msg)
 
-        if channel == "instagram" and (
-            not self.instagram_channel_id or self.instagram_channel_id == "ch_insta_01"
-        ):
-            msg = "POSTIZ_INSTAGRAM_CHANNEL_ID 환경변수가 실제 채널 ID로 설정되지 않았습니다."
-            raise PostizIntegrationError(msg)
-
-        if channel == "x_twitter" and (
-            not self.x_channel_id or self.x_channel_id == "ch_x_01"
-        ):
-            msg = "POSTIZ_X_CHANNEL_ID 환경변수가 실제 채널 ID로 설정되지 않았습니다."
-            raise PostizIntegrationError(msg)
-
     def _headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Accept": "application/json",
-        }
+        return {"Authorization": self.api_key, "Accept": "application/json"}
 
+    async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
+        url = f"{self.base_url}{path}"
+        try:
+            if self._http is not None:
+                resp = await self._http.request(method, url, headers=self._headers(), **kwargs)
+            else:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.request(method, url, headers=self._headers(), **kwargs)
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as exc:
+            detail = exc.response.text[:300]
+            raise PostizIntegrationError(
+                f"Postiz 요청 실패 ({method} {url}): HTTP {exc.response.status_code} {detail}"
+            ) from exc
+        except (httpx.HTTPError, ValueError) as exc:
+            raise PostizIntegrationError(f"Postiz 요청 실패 ({method} {url}): {exc}") from exc
+
+    # --------------------------------------------------------------- integrations
+    async def list_integrations(self, refresh: bool = False) -> list[dict[str, Any]]:
+        """`GET /integrations` -> connected channels (`id`, `name`, `identifier`, ...)."""
+        self._ensure_configured()
+        if self._integrations_cache is None or refresh:
+            payload = await self._request("GET", "/integrations")
+            if not isinstance(payload, list):
+                raise PostizIntegrationError(f"Postiz 채널 목록 응답이 올바르지 않습니다: {payload}")
+            self._integrations_cache = payload
+        return self._integrations_cache
+
+    async def _resolve_integration(self, channel: Channel) -> tuple[str, str]:
+        """Return `(integration_id, identifier)` for a logical channel."""
+        integrations = await self.list_integrations()
+        wanted = _IDENTIFIERS[channel]
+        configured = self.instagram_channel_id if channel == "instagram" else self.x_channel_id
+
+        if configured not in _PLACEHOLDER_CHANNEL_IDS:
+            for item in integrations:
+                if str(item.get("id")) == configured:
+                    return configured, str(item.get("identifier") or wanted[0])
+            raise PostizIntegrationError(
+                f"설정된 Postiz 채널 ID({configured})가 연결된 채널 목록에 없습니다."
+            )
+
+        matches = [
+            item
+            for item in integrations
+            if str(item.get("identifier")) in wanted and not item.get("disabled")
+        ]
+        if not matches:
+            label = "인스타그램" if channel == "instagram" else "X(트위터)"
+            raise PostizIntegrationError(
+                f"Postiz에 연결된 {label} 채널이 없습니다. Postiz 화면에서 채널을 먼저 연결하세요."
+            )
+        chosen = matches[0]
+        return str(chosen["id"]), str(chosen.get("identifier") or wanted[0])
+
+    # -------------------------------------------------------------------- media
     async def upload_media(self, file_path: str, alt_text: str) -> dict[str, Any]:
-        """Upload media binary to `POST /media` and return media metadata."""
+        """Upload an image to `POST /upload` and return media metadata."""
         self._ensure_configured()
         path = Path(file_path)
         if not path.exists():
@@ -64,99 +127,85 @@ class PostizClient:
 
         meta = inspect_image_metadata(path)
         mime_type, _ = mimetypes.guess_type(str(path))
-        if not mime_type:
-            mime_type = "image/jpeg"
+        files = {"file": (path.name, path.read_bytes(), mime_type or "image/jpeg")}
 
-        files = {"file": (path.name, path.read_bytes(), mime_type)}
-        data = {"alt": alt_text}
+        payload = await self._request("POST", "/upload", files=files)
+        if not isinstance(payload, dict):
+            raise PostizIntegrationError(f"Postiz 업로드 응답이 올바르지 않습니다: {payload}")
 
-        try:
-            if self._http is not None:
-                resp = await self._http.post(
-                    f"{self.base_url}/media",
-                    headers=self._headers(),
-                    files=files,
-                    data=data,
-                )
-            else:
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    resp = await client.post(
-                        f"{self.base_url}/media",
-                        headers=self._headers(),
-                        files=files,
-                        data=data,
-                    )
-            resp.raise_for_status()
-            payload = resp.json()
-        except httpx.HTTPError as exc:
-            msg = f"Postiz 미디어 업로드 실패 ({self.base_url}/media): {exc}"
-            raise PostizIntegrationError(msg) from exc
-
-        media_id = str(payload.get("id") or payload.get("media_id") or "")
-        media_url = str(payload.get("path") or payload.get("media_url") or "")
+        media_id = str(payload.get("id") or "")
+        media_url = str(payload.get("path") or "")
         if not media_id:
             raise PostizIntegrationError(f"Postiz 응답에 media_id가 없습니다: {payload}")
 
+        self._media[media_id] = {"path": media_url, "alt": alt_text}
         return {
             "media_id": media_id,
             "media_url": media_url,
             "aspect_ratio": meta.aspect_ratio_label,
         }
 
+    # -------------------------------------------------------------------- posts
+    @staticmethod
+    def _settings_for(channel: Channel, identifier: str) -> dict[str, Any]:
+        if channel == "instagram":
+            return {
+                "__type": identifier,
+                "post_type": "post",
+                "is_trial_reel": False,
+                "collaborators": [],
+            }
+        return {"__type": "x", "who_can_reply_post": "everyone"}
+
     async def create_draft_post(
         self,
-        channel: Literal["instagram", "x_twitter"],
+        channel: Channel,
         content: str,
         media_ids: list[str],
         scheduled_at: str | None = None,
     ) -> dict[str, Any]:
-        """Create a post in strict `DRAFT` status on Postiz (`POST /posts`)."""
-        self._ensure_configured(channel=channel)
-        channel_id = (
-            self.instagram_channel_id if channel == "instagram" else self.x_channel_id
-        )
+        """Create a post in `draft` state on Postiz (`POST /posts`)."""
+        self._ensure_configured()
+        integration_id, identifier = await self._resolve_integration(channel)
 
+        images: list[dict[str, str]] = []
+        for media_id in media_ids:
+            known = self._media.get(media_id, {})
+            image: dict[str, str] = {"id": media_id, "path": known.get("path", "")}
+            if known.get("alt"):
+                image["alt"] = known["alt"]
+            images.append(image)
+
+        date = scheduled_at or datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace(
+            "+00:00", "Z"
+        )
         body: dict[str, Any] = {
             "type": "draft",
-            "status": "DRAFT",
-            "channelId": channel_id,
-            "platform": channel,
-            "content": content,
-            "mediaIds": media_ids,
+            "date": date,
+            "shortLink": False,
+            "tags": [],
+            "posts": [
+                {
+                    "integration": {"id": integration_id},
+                    "value": [{"content": content, "image": images}],
+                    "settings": self._settings_for(channel, identifier),
+                }
+            ],
         }
-        if scheduled_at:
-            body["scheduledAt"] = scheduled_at
 
-        try:
-            if self._http is not None:
-                resp = await self._http.post(
-                    f"{self.base_url}/posts",
-                    headers=self._headers(),
-                    json=body,
-                )
-            else:
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    resp = await client.post(
-                        f"{self.base_url}/posts",
-                        headers=self._headers(),
-                        json=body,
-                    )
-            resp.raise_for_status()
-            payload = resp.json()
-        except httpx.HTTPError as exc:
-            msg = f"Postiz DRAFT 생성 실패 ({channel}): {exc}"
-            raise PostizIntegrationError(msg) from exc
+        payload = await self._request("POST", "/posts", json=body)
 
-        post_id = str(payload.get("id") or payload.get("post_id") or "")
+        # Response is a list of `{postId, integration}`; tolerate a bare object too.
+        first = payload[0] if isinstance(payload, list) and payload else payload
+        post_id = ""
+        if isinstance(first, dict):
+            post_id = str(first.get("postId") or first.get("id") or first.get("post_id") or "")
         if not post_id:
             raise PostizIntegrationError(f"Postiz 응답에 post_id가 없습니다: {payload}")
 
-        dashboard_url = str(
-            payload.get("dashboard_url") or f"{self.base_url.rsplit('/api', 1)[0]}/launches"
-        )
         return {
             "post_id": post_id,
             "channel": channel,
             "status": "DRAFT",
-            "dashboard_url": dashboard_url,
+            "dashboard_url": f"{self.base_url.rsplit('/api', 1)[0]}/launches",
         }

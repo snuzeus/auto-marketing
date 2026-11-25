@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Literal
 
 from google.genai import types
 
 from src.core.config_loader import AppSettings
+from src.core.env_file import update_env_file
 from src.core.schema import ChannelType
 from src.integrations.dcinside_router import DCInsideRouter
 from src.integrations.naver_cafe_client import NaverCafeClient
@@ -131,6 +133,17 @@ def build_tools_for_enabled_channels(enabled_channels: list[ChannelType]) -> lis
     return [types.Tool(function_declarations=declarations)]
 
 
+def _persist_naver_tokens(access_token: str, refresh_token: str) -> None:
+    """Write refreshed Naver tokens back to .env so they survive a restart."""
+    env_path = Path(".env")
+    if not env_path.exists():
+        return
+    updates = {"NAVER_ACCESS_TOKEN": access_token}
+    if refresh_token:
+        updates["NAVER_REFRESH_TOKEN"] = refresh_token
+    update_env_file(env_path, updates)
+
+
 class MCPToolDispatcher:
     """Executes MCP tool calls while strictly enforcing `enabled_channels` isolation."""
 
@@ -158,6 +171,7 @@ class MCPToolDispatcher:
             telegram_bot_token=settings.telegram_bot_token,
             telegram_chat_id=settings.telegram_chat_id,
             enable_local_clipboard=settings.enable_local_clipboard,
+            on_token_refresh=_persist_naver_tokens,
         )
         self.dcinside = dcinside_router or DCInsideRouter(
             telegram_bot_token=settings.telegram_bot_token,

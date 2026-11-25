@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import json
 import mimetypes
 from pathlib import Path
@@ -125,7 +126,11 @@ class DCInsideRouter:
         if not mime_type:
             mime_type = "image/jpeg"
 
-        caption = f"📋 디시인사이드 [{gallery_id}] 갤러리 원고\n\n```\n{formatted_text[:850]}\n```"
+        # HTML mode with escaping: user text containing `_`, `*` or backticks would break Markdown.
+        caption = (
+            f"📋 디시인사이드 [{html.escape(gallery_id)}] 갤러리 원고\n\n"
+            f"<pre>{html.escape(formatted_text[:850])}</pre>"
+        )
         reply_markup = {
             "inline_keyboard": [
                 [{"text": f"🔗 {gallery_id} 갤러리 바로가기", "url": target_url}]
@@ -135,7 +140,7 @@ class DCInsideRouter:
         data = {
             "chat_id": self.telegram_chat_id,
             "caption": caption,
-            "parse_mode": "Markdown",
+            "parse_mode": "HTML",
             "reply_markup": json.dumps(reply_markup, ensure_ascii=False),
         }
         files = {"photo": (path.name, path.read_bytes(), mime_type)}

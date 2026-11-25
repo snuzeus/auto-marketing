@@ -54,29 +54,35 @@ async def test_postiz_client_upload_and_create_draft(tmp_path: Path) -> None:
     img_file = tmp_path / "post.jpg"
     img_file.write_bytes(_make_jpeg_bytes())
 
+    posted: list[dict[str, Any]] = []
+    auth_headers: list[str] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/media"):
-            return httpx.Response(
-                200, json={"id": "media_999", "path": "http://localhost:3000/uploads/post.jpg"}
-            )
-        if request.url.path.endswith("/posts"):
+        auth_headers.append(request.headers.get("Authorization", ""))
+        path = request.url.path
+        if path.endswith("/integrations"):
             return httpx.Response(
                 200,
-                json={
-                    "id": "post_123",
-                    "status": "DRAFT",
-                    "dashboard_url": "http://localhost:4200/launches",
-                },
+                json=[
+                    {"id": "int_x", "identifier": "x", "name": "me", "disabled": False},
+                    {"id": "int_ig", "identifier": "instagram", "name": "me", "disabled": False},
+                ],
             )
+        if path.endswith("/upload"):
+            return httpx.Response(
+                200, json={"id": "media_999", "path": "http://localhost:4007/uploads/post.jpg"}
+            )
+        if path.endswith("/posts"):
+            posted.append(json.loads(request.read().decode("utf-8")))
+            return httpx.Response(200, json=[{"postId": "post_123", "integration": "int_ig"}])
         return httpx.Response(404)
 
     transport = httpx.MockTransport(handler)
     async with httpx.AsyncClient(transport=transport) as http_client:
+        # Channel IDs left empty -> resolved from GET /integrations by identifier.
         postiz = PostizClient(
-            base_url="http://localhost:3000/api/v1",
-            api_key="pz_live_real_key",
-            instagram_channel_id="insta_real_01",
-            x_channel_id="x_real_01",
+            base_url="http://localhost:4007/api/public/v1",
+            api_key="real_key",
             http_client=http_client,
         )
         media_res = await postiz.upload_media(str(img_file), "대체 텍스트")
@@ -90,6 +96,37 @@ async def test_postiz_client_upload_and_create_draft(tmp_path: Path) -> None:
         )
         assert draft_res["post_id"] == "post_123"
         assert draft_res["status"] == "DRAFT"
+        assert draft_res["dashboard_url"] == "http://localhost:4007/launches"
+
+        assert set(auth_headers) == {"real_key"}  # raw key, no Bearer prefix
+        body = posted[0]
+        assert body["type"] == "draft"
+        post = body["posts"][0]
+        assert post["integration"] == {"id": "int_ig"}
+        assert post["settings"]["__type"] == "instagram"
+        assert post["settings"]["post_type"] == "post"
+        assert post["value"][0]["content"] == "인스타 캡션 본문"
+        assert post["value"][0]["image"][0]["id"] == "media_999"
+        assert post["value"][0]["image"][0]["path"].endswith("/uploads/post.jpg")
+
+        x_res = await postiz.create_draft_post(channel="x_twitter", content="x", media_ids=[])
+        assert x_res["channel"] == "x_twitter"
+        assert posted[1]["posts"][0]["integration"] == {"id": "int_x"}
+        assert posted[1]["posts"][0]["settings"]["__type"] == "x"
+
+
+async def test_postiz_client_errors_when_channel_not_connected() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        postiz = PostizClient(
+            base_url="http://localhost:4007/api/public/v1",
+            api_key="real_key",
+            http_client=http_client,
+        )
+        with pytest.raises(PostizIntegrationError, match="채널이 없습니다"):
+            await postiz.create_draft_post(channel="x_twitter", content="x", media_ids=[])
 
 
 async def test_naver_cafe_oauth_refresh_on_401(tmp_path: Path) -> None:
@@ -520,8 +557,8 @@ def test_web_dispatch_instagram_uploads_original_and_notice_card_to_postiz(
     """
     settings = AppSettings(
         gemini_api_key="AIzaTestServerKey",
-        postiz_base_url="http://localhost:3000/api/v1",
-        postiz_api_key="pz_live_real_key",
+        postiz_base_url="http://localhost:4007/api/public/v1",
+        postiz_api_key="real_key",
         postiz_instagram_channel_id="ch_insta_real_01",
     )
 
@@ -529,7 +566,11 @@ def test_web_dispatch_instagram_uploads_original_and_notice_card_to_postiz(
     recorded_posts: list[dict[str, Any]] = []
 
     def postiz_handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/media"):
+        if request.url.path.endswith("/integrations"):
+            return httpx.Response(
+                200, json=[{"id": "ch_insta_real_01", "identifier": "instagram", "name": "me"}]
+            )
+        if request.url.path.endswith("/upload"):
             idx = len(recorded_uploads) + 1
             raw_body = request.read()
             recorded_uploads.append((str(request.headers.get("content-type", "")), raw_body))
@@ -540,14 +581,7 @@ def test_web_dispatch_instagram_uploads_original_and_notice_card_to_postiz(
         if request.url.path.endswith("/posts"):
             payload = json.loads(request.read().decode("utf-8"))
             recorded_posts.append(payload)
-            return httpx.Response(
-                200,
-                json={
-                    "id": "post_carousel_01",
-                    "status": "DRAFT",
-                    "dashboard_url": "http://localhost:4200/launches",
-                },
-            )
+            return httpx.Response(200, json=[{"postId": "post_carousel_01", "integration": "x"}])
         return httpx.Response(404)
 
     http_client = httpx.AsyncClient(transport=httpx.MockTransport(postiz_handler))
@@ -662,8 +696,9 @@ def test_web_dispatch_instagram_uploads_original_and_notice_card_to_postiz(
 
         # Confirm create_draft_post attached BOTH slides in exact order
         assert len(recorded_posts) == 1
-        assert recorded_posts[0]["mediaIds"] == ["media_slide_1", "media_slide_2"]
-        assert recorded_posts[0]["status"] == "DRAFT"
+        assert recorded_posts[0]["type"] == "draft"
+        images = recorded_posts[0]["posts"][0]["value"][0]["image"]
+        assert [img["id"] for img in images] == ["media_slide_1", "media_slide_2"]
     finally:
         if session_id:
             for artifact in Path(".runtime_uploads").glob(f"{session_id}*"):
@@ -810,3 +845,161 @@ def test_card_news_prompt_and_direct_edit_endpoints(tmp_path: Path) -> None:
         if session_id:
             for artifact in Path(".runtime_uploads").glob(f"{session_id}*"):
                 artifact.unlink(missing_ok=True)
+
+
+async def test_dcinside_telegram_caption_escapes_html(tmp_path: Path) -> None:
+    """Markdown-breaking characters in the body must not break the Telegram caption."""
+    from src.integrations.dcinside_router import DCInsideRouter
+
+    img_file = tmp_path / "dc.jpg"
+    img_file.write_bytes(_make_jpeg_bytes())
+    sent: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent["body"] = request.read().decode("utf-8", errors="ignore")
+        return httpx.Response(200, json={"ok": True})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        router = DCInsideRouter(
+            telegram_bot_token="111:real",
+            telegram_chat_id="42",
+            enable_local_clipboard=False,
+            http_client=http_client,
+        )
+        res = await router.dispatch_pack("gadget", "제목_*`", "본문 <b> & `code`", str(img_file))
+
+    assert res["telegram_sent"] is True
+    assert "parse_mode" in sent["body"] and "HTML" in sent["body"]
+    assert "&lt;b&gt; &amp;" in sent["body"]
+
+
+async def test_naver_refresh_persists_tokens_via_callback() -> None:
+    saved: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"access_token": "new_acc", "refresh_token": "new_ref"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        from src.integrations.naver_cafe_client import NaverCafeClient
+
+        client = NaverCafeClient(
+            client_id="id",
+            client_secret="secret",
+            access_token="old",
+            refresh_token="old_ref",
+            http_client=http_client,
+            on_token_refresh=lambda a, r: saved.append((a, r)),
+        )
+        assert await client.refresh_access_token() == "new_acc"
+
+    assert saved == [("new_acc", "new_ref")]
+
+
+def test_update_env_file_preserves_other_lines(tmp_path: Path) -> None:
+    from src.core.env_file import update_env_file
+
+    env = tmp_path / ".env"
+    env.write_text('A="1"\n# NAVER_ACCESS_TOKEN="c"\nNAVER_ACCESS_TOKEN="old"\n', encoding="utf-8")
+    update_env_file(env, {"NAVER_ACCESS_TOKEN": "new", "NAVER_REFRESH_TOKEN": "r"})
+    text = env.read_text(encoding="utf-8")
+    assert 'A="1"' in text and '# NAVER_ACCESS_TOKEN="c"' in text
+    assert 'NAVER_ACCESS_TOKEN="new"' in text and 'NAVER_REFRESH_TOKEN="r"' in text
+
+
+def _approval_handler(decision: str | None, chat_id: int = 42, calls: list[str] | None = None):
+    """Mock Telegram + Naver. `decision`: 'approve' | 'reject' | None (never clicks)."""
+    state: dict[str, Any] = {"token": None, "naver_posts": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if calls is not None:
+            calls.append(path.rsplit("/", 1)[-1])
+        if path.endswith("/sendMessage"):
+            body = json.loads(request.read().decode("utf-8"))
+            state["token"] = body["reply_markup"]["inline_keyboard"][0][0]["callback_data"].split(":")[1]
+            return httpx.Response(200, json={"ok": True, "result": {"message_id": 7}})
+        if path.endswith("/getUpdates"):
+            if decision is None:
+                return httpx.Response(200, json={"ok": True, "result": []})
+            data = f"naver_{decision}:{state['token']}"
+            return httpx.Response(
+                200,
+                json={
+                    "ok": True,
+                    "result": [
+                        {
+                            "update_id": 1,
+                            "callback_query": {
+                                "id": "cb1",
+                                "data": data,
+                                "message": {"chat": {"id": chat_id}},
+                            },
+                        }
+                    ],
+                },
+            )
+        if path.endswith("/articles"):
+            state["naver_posts"] += 1
+            return httpx.Response(
+                200, json={"message": {"result": {"articleId": 9, "articleUrl": "http://x/9"}}}
+            )
+        return httpx.Response(200, json={"ok": True})
+
+    return handler, state
+
+
+async def _run_cafe_publish(handler, tmp_path: Path, **kwargs: Any) -> dict[str, Any]:
+    img = tmp_path / "c.jpg"
+    img.write_bytes(_make_jpeg_bytes())
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http_client:
+        client = NaverCafeClient(
+            access_token="tok",
+            telegram_bot_token="111:real",
+            telegram_chat_id="42",
+            http_client=http_client,
+            poll_interval_s=0,
+            **kwargs,
+        )
+        return await client.publish_article(
+            club_id="1", menu_id=2, head_tag="[공지]", subject="제목", html_body="<p>본문</p>",
+            search_tags=["태그"], image_path=str(img), approval_mode="telegram_confirm_api",
+        )
+
+
+async def test_naver_telegram_approval_posts_only_after_approve(tmp_path: Path) -> None:
+    calls: list[str] = []
+    handler, state = _approval_handler("approve", calls=calls)
+    res = await _run_cafe_publish(handler, tmp_path)
+    assert res["status"] == "posted" and res["approved_via"] == "telegram"
+    assert state["naver_posts"] == 1
+    assert calls.index("sendMessage") < calls.index("articles")
+
+
+async def test_naver_telegram_reject_does_not_post(tmp_path: Path) -> None:
+    handler, state = _approval_handler("reject")
+    res = await _run_cafe_publish(handler, tmp_path)
+    assert res["status"] == "rejected" and res["posted"] is False
+    assert state["naver_posts"] == 0
+
+
+async def test_naver_telegram_timeout_does_not_post(tmp_path: Path) -> None:
+    handler, state = _approval_handler(None)
+    res = await _run_cafe_publish(handler, tmp_path, approval_timeout_s=0.05)
+    assert res["status"] == "timeout" and state["naver_posts"] == 0
+
+
+async def test_naver_telegram_ignores_clicks_from_other_chats(tmp_path: Path) -> None:
+    handler, state = _approval_handler("approve", chat_id=999)
+    res = await _run_cafe_publish(handler, tmp_path, approval_timeout_s=0.05)
+    assert res["status"] == "timeout" and state["naver_posts"] == 0
+
+
+async def test_naver_confirm_mode_requires_telegram(tmp_path: Path) -> None:
+    img = tmp_path / "c.jpg"
+    img.write_bytes(_make_jpeg_bytes())
+    client = NaverCafeClient(access_token="tok")
+    with pytest.raises(NaverCafeIntegrationError, match="텔레그램 승인이 필요"):
+        await client.publish_article(
+            club_id="1", menu_id=2, head_tag="", subject="s", html_body="b",
+            search_tags=[], image_path=str(img), approval_mode="telegram_confirm_api",
+        )
