@@ -1118,6 +1118,15 @@
           </div>
         </div>
         <div class="actions">
+          ${channel === "dcinside" ? `
+          <button type="button" class="btn" id="dc-title-btn-${channel}">제목 복사</button>
+          <button type="button" class="btn" id="dc-body-btn-${channel}">본문 복사</button>
+          <a href="${sourceImgUrl}" class="btn btn-quiet" download>원본 사진 받기</a>
+          <a href="${cardImgUrl}" class="btn btn-quiet" download>카드 이미지 받기</a>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="save-btn-${channel}">저장</button>
+          <button type="button" class="btn btn-primary" id="dc-write-btn-${channel}">글쓰기 열기</button>
+          ` : `
           <button type="button" class="btn btn-quiet" id="copy-btn-${channel}">글 복사</button>
           <a href="${cardImgUrl}" class="btn btn-quiet" download>카드 이미지 받기</a>
           <span class="spacer"></span>
@@ -1126,6 +1135,7 @@
             ? `<button type="button" class="btn" id="unapprove-btn-${channel}">승인 취소</button>`
             : `<button type="button" class="btn btn-approve" id="approve-btn-${channel}" ${!isValid ? "disabled" : ""}>승인</button>`}
           <button type="button" class="btn btn-primary" id="dispatch-btn-${channel}" ${!isApproved ? `disabled title="승인한 뒤에 전송할 수 있습니다"` : ""}>전송</button>
+          `}
         </div>
       `;
 
@@ -1134,7 +1144,7 @@
         inp.addEventListener("input", () => {
           if (inp.dataset.field) card.dataset.dirty = "1";
           updateCounter(channel, card);
-          if (draftState.status === "approved") {
+          if (draftState.status === "approved" && channel !== "dcinside") {
             card.querySelector(`#alert-${channel}`).innerHTML =
               `<div class="note note-warning" style="margin-bottom:8px;">내용을 고쳤습니다. 저장하면 승인이 취소됩니다.</div>`;
             const dispBtn = card.querySelector(`#dispatch-btn-${channel}`);
@@ -1145,7 +1155,9 @@
 
       card.querySelector(`#card-prompt-btn-${channel}`).addEventListener("click", () => modifyCardNewsByPrompt(sessionId, channel, card));
       card.querySelector(`#card-save-btn-${channel}`).addEventListener("click", () => saveCardNewsDirect(sessionId, channel, card));
-      card.querySelector(`#copy-btn-${channel}`).addEventListener("click", () => copyChannelText(channel, card));
+      const copyBtn = card.querySelector(`#copy-btn-${channel}`);
+      if (copyBtn) copyBtn.addEventListener("click", () => copyChannelText(channel, card));
+      if (channel === "dcinside") bindDcinsideActions(sessionId, channel, card, draftState);
       card.querySelector(`#save-btn-${channel}`).addEventListener("click", () => saveChannelEdit(sessionId, channel, card));
       card.querySelector(`#regen-btn-${channel}`).addEventListener("click", () => regenerateChannel(sessionId, channel, card));
 
@@ -1161,9 +1173,52 @@
       });
       const unapproveBtn = card.querySelector(`#unapprove-btn-${channel}`);
       if (unapproveBtn) unapproveBtn.addEventListener("click", () => toggleApproval(sessionId, channel, false));
-      card.querySelector(`#dispatch-btn-${channel}`).addEventListener("click", () => dispatchChannel(sessionId, channel, card));
+      const dispatchBtn = card.querySelector(`#dispatch-btn-${channel}`);
+      if (dispatchBtn) dispatchBtn.addEventListener("click", () => dispatchChannel(sessionId, channel, card));
 
       return card;
+    }
+
+    // 갤러리 ID 또는 갤러리 주소를 받아 글쓰기 주소를 만든다. 마이너(mgallery)·미니(mini)는 주소로만 구분된다.
+    function dcWriteUrl(value) {
+      const text = (value || "").trim();
+      const fromUrl = text.match(/gall\.dcinside\.com\/(?:(mgallery|mini)\/)?board\/[a-z]+\/?\?(?:[^#]*&)?id=([A-Za-z0-9_]+)/);
+      if (fromUrl) {
+        const prefix = fromUrl[1] ? `${fromUrl[1]}/` : "";
+        return `https://gall.dcinside.com/${prefix}board/write/?id=${fromUrl[2]}`;
+      }
+      if (!/^[A-Za-z0-9_]+$/.test(text)) return null;
+      return `https://gall.dcinside.com/board/write/?id=${text}`;
+    }
+
+    // 디시는 직접 올리는 채널이다. 앱은 복사와 글쓰기 화면 열기까지만 하고 게시하지 않는다.
+    function bindDcinsideActions(sessionId, channel, card, draftState) {
+      const field = (name) => card.querySelector(`[data-field="${name}"]`).value;
+      const copy = async (text, label) => {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast(`${label} 복사했습니다.`);
+        } catch (err) {
+          showToast("복사하지 못했습니다. 글을 직접 선택해 복사해 주세요.");
+        }
+      };
+      card.querySelector(`#dc-title-btn-${channel}`).addEventListener("click", () => copy(field("title"), "제목을"));
+      card.querySelector(`#dc-body-btn-${channel}`).addEventListener("click", () => copy(field("body"), "본문을"));
+      card.querySelector(`#dc-write-btn-${channel}`).addEventListener("click", async () => {
+        const url = dcWriteUrl(field("gallery_id"));
+        if (!url) {
+          showCardError(card, channel, "갤러리 ID 또는 갤러리 주소를 확인해 주세요.");
+          return;
+        }
+        // 팝업 차단을 피하려면 클릭 직후(await 전에) 창을 열어야 한다.
+        window.open(url, "_blank", "noopener");
+        // 올리기로 한 글은 승인 처리해 다음 생성 때 문체 예시로 쓴다.
+        let latest = draftState;
+        if (card.dataset.dirty) latest = await saveChannelEdit(sessionId, channel, card);
+        if (latest && latest.status !== "approved" && (!latest.validation || latest.validation.is_valid !== false)) {
+          toggleApproval(sessionId, channel, true);
+        }
+      });
     }
 
     function showCardError(card, channel, message) {
@@ -1230,7 +1285,7 @@
         return `
           <div class="row-2">
             <div class="field">
-              <label>갤러리 ID</label>
+              <div class="field-label"><label>갤러리</label><span class="hint">ID 또는 주소 (마이너·미니는 주소)</span></div>
               <input type="text" data-field="gallery_id" value="${escapeAttr(spec.gallery_id)}" />
             </div>
             <div></div>
