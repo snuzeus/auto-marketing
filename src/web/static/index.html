@@ -125,6 +125,17 @@
     .field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
     label, .label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); }
     .field > label, .field > .label { margin-bottom: 6px; }
+    .set-group { border-top: 1px solid var(--line, #e5e7eb); padding: 18px 0; }
+    .set-group:first-of-type { border-top: 0; padding-top: 0; }
+    .set-group h3 { margin: 0 0 4px; font-size: 15px; }
+    .set-group > p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .set-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+    .set-result { font-size: 13px; color: var(--muted); }
+    .set-result.ok { color: #0b5c40; }
+    .set-result.bad { color: #b42318; }
+    .set-badge { font-size: 12px; color: #0b5c40; }
+    .copy-line { display: flex; gap: 6px; align-items: center; font-size: 12.5px; margin: 4px 0; }
+    .copy-line code { background: #f3f4f6; padding: 3px 6px; border-radius: 4px; overflow-wrap: anywhere; }
     .hint { font-size: 12px; font-weight: 400; color: var(--muted); }
     input[type="text"], input[type="number"], textarea, select {
       width: 100%;
@@ -313,6 +324,7 @@
       <button type="button" class="nav-tab active" id="tabBtnNotice">공지 만들기</button>
       <button type="button" class="nav-tab" id="tabBtnStyle">글쓰기 스타일</button>
       <button type="button" class="nav-tab" id="tabBtnHistory">지난 공지</button>
+      <button type="button" class="nav-tab" id="tabBtnSettings">설정</button>
     </nav>
     <details class="conn" id="connBox">
       <summary><span class="dot" id="connDot"></span><span id="connLabel">연결 확인 중</span></summary>
@@ -446,7 +458,7 @@
               </div>
               <div class="field">
                 <label for="styleHandle">계정 이름</label>
-                <input type="text" id="styleHandle" placeholder="@realcardshop" required />
+                <input type="text" id="styleHandle" placeholder="@매장계정" required />
               </div>
             </div>
             <div class="field">
@@ -484,6 +496,17 @@
         <button type="button" class="btn btn-sm" onclick="loadHistoryList()">새로고침</button>
       </div>
       <div id="historyListContainer"></div>
+    </section>
+  </main>
+
+  <!-- 설정 -->
+  <main id="viewSettings" class="page" hidden>
+    <section class="panel narrow">
+      <div class="panel-head">
+        <h2>설정</h2>
+        <p>키와 매장 정보를 여기에 입력하면 이 컴퓨터에만 저장됩니다. 저장된 키는 다시 보여 주지 않으며, 바꿀 때만 새로 입력하세요.</p>
+      </div>
+      <div class="panel-body" id="settingsBody">불러오는 중</div>
     </section>
   </main>
 
@@ -536,6 +559,8 @@
     let learnedProfiles = [];
     let activeChannel = null;
     let toastTimer = null;
+    let storeBrand = "OFFICIAL TCG STORE";
+    let firstRunShown = false;
 
     const $ = (id) => document.getElementById(id);
 
@@ -551,6 +576,9 @@
       $("tabBtnNotice").classList.toggle("active", tabName === "notice");
       $("tabBtnStyle").classList.toggle("active", tabName === "style");
       $("tabBtnHistory").classList.toggle("active", tabName === "history");
+      $("tabBtnSettings").classList.toggle("active", tabName === "settings");
+      $("viewSettings").hidden = tabName !== "settings";
+      if (tabName === "settings") loadSettings();
       $("viewNotice").hidden = tabName !== "notice";
       $("viewStyle").hidden = tabName !== "style";
       $("viewHistory").hidden = tabName !== "history";
@@ -560,6 +588,158 @@
     $("tabBtnNotice").addEventListener("click", () => activateTab("notice"));
     $("tabBtnStyle").addEventListener("click", () => activateTab("style"));
     $("tabBtnHistory").addEventListener("click", () => activateTab("history"));
+    $("tabBtnSettings").addEventListener("click", () => activateTab("settings"));
+
+    const SETTING_GROUPS = [
+      { id: "store", title: "매장 정보", desc: "공지 카드 맨 아래에 들어가는 매장 이름입니다." },
+      { id: "gemini", title: "글 생성 (필수)", desc: "Google AI Studio(aistudio.google.com)에서 API 키를 만들어 붙여넣으세요.", test: "gemini" },
+      { id: "postiz", title: "X · 인스타그램 (Postiz)", desc: "X와 인스타그램은 Postiz(http://localhost:4007)를 거쳐 초안으로 올라갑니다. 앱 키를 바꾼 뒤에는 「Postiz 다시 시작」을 누르세요.", test: "postiz", postiz: true },
+      { id: "telegram", title: "텔레그램 (네이버 게시 승인)", desc: "네이버 카페에 올리기 전에 텔레그램 버튼으로 승인합니다. 봇에게 먼저 아무 메시지나 보내 두세요.", test: "telegram" },
+      { id: "naver", title: "네이버 카페", desc: "Client ID와 Secret을 저장한 뒤 「네이버 로그인」을 눌러 글을 올릴 계정으로 로그인하세요.", naver: true },
+      { id: "dcinside", title: "디시인사이드", desc: "새 공지의 기본 갤러리입니다. 마이너·미니 갤러리는 주소를 붙여넣으세요." }
+    ];
+
+    async function loadSettings() {
+      const body = $("settingsBody");
+      try {
+        const res = await fetch("/api/settings");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "설정을 불러오지 못했습니다.");
+        renderSettings(data);
+      } catch (err) {
+        body.innerHTML = `<div class="note note-error">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function renderSettings(data) {
+      const body = $("settingsBody");
+      const copyLine = (label, value) => `<div class="copy-line"><span>${label}</span><code>${escapeHtml(value)}</code><button type="button" class="btn btn-sm" data-copy="${escapeAttr(value)}">복사</button></div>`;
+      body.innerHTML = SETTING_GROUPS.map(g => {
+        const fields = data.fields.filter(f => f.group === g.id).map(f => `
+          <div class="field">
+            <div class="field-label"><label for="set-${f.key}">${escapeHtml(f.label)}</label>
+              <span class="hint">${f.secret && f.is_set ? `<span class="set-badge">저장됨</span> · ` : ""}${escapeHtml(f.hint)}</span></div>
+            <input id="set-${f.key}" data-setting="${f.key}" type="${f.secret ? "password" : "text"}" autocomplete="off"
+              value="${f.secret ? "" : escapeAttr(f.value)}" placeholder="${f.secret && f.is_set ? "바꿀 때만 입력" : ""}" />
+          </div>`).join("");
+        const extras = [];
+        if (g.postiz) {
+          extras.push(copyLine("X 콜백 주소", data.x_redirect_uri));
+          extras.push(copyLine("인스타 콜백 주소", data.instagram_redirect_uri));
+        }
+        if (g.naver) {
+          extras.push(copyLine("네이버 Callback URL", data.naver_redirect_uri));
+          extras.push(`<p class="hint">로그인 상태: ${data.naver_connected ? `<span class="set-badge">연결됨</span>` : "연결 안 됨"}</p>`);
+        }
+        const tools = [];
+        if (g.test) tools.push(`<button type="button" class="btn btn-sm" data-test="${g.test}">연결 확인</button>`);
+        if (g.postiz) {
+          tools.push(`<a class="btn btn-sm" href="http://localhost:4007" target="_blank" rel="noopener">Postiz 열기</a>`);
+          tools.push(`<button type="button" class="btn btn-sm" id="restartPostizBtn">Postiz 다시 시작</button>`);
+        }
+        if (g.naver) tools.push(`<a class="btn btn-sm" href="/naver/login" target="_blank" rel="noopener" id="naverLoginBtn">네이버 로그인</a>`);
+        return `<div class="set-group" data-group="${g.id}">
+          <h3>${g.title}</h3><p>${escapeHtml(g.desc)}</p>${fields}${extras.join("")}
+          ${tools.length ? `<div class="set-tools">${tools.join("")}<span class="set-result" data-result="${g.id}"></span></div>` : ""}
+        </div>`;
+      }).join("") + `<div class="set-tools" style="margin-top:12px;"><button type="button" class="btn btn-primary" id="saveSettingsBtn">저장</button><span class="set-result" id="saveSettingsResult"></span></div>`;
+
+      body.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(b.dataset.copy); showToast("복사했습니다."); } catch (e) { showToast("복사하지 못했습니다."); }
+      }));
+      body.querySelectorAll("[data-test]").forEach(b => b.addEventListener("click", () => testSetting(b)));
+      $("saveSettingsBtn").addEventListener("click", saveSettings);
+      $("restartPostizBtn").addEventListener("click", restartPostiz);
+      $("naverLoginBtn").addEventListener("click", (e) => {
+        const unsaved = ["NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"].some(k => k in collectSettings());
+        if (unsaved) {
+          e.preventDefault();
+          const out = document.querySelector('[data-result="naver"]');
+          out.className = "set-result bad";
+          out.textContent = "먼저 아래 「저장」을 누른 뒤 로그인하세요.";
+        }
+      });
+    }
+
+    function collectSettings() {
+      const payload = {};
+      document.querySelectorAll("#settingsBody input[data-setting]").forEach(inp => {
+        const isSecret = inp.type === "password";
+        if (isSecret && !inp.value.trim()) return;
+        payload[inp.dataset.setting] = inp.value.trim();
+      });
+      return payload;
+    }
+
+    async function saveSettings() {
+      const btn = $("saveSettingsBtn");
+      const out = $("saveSettingsResult");
+      btn.disabled = true;
+      try {
+        const res = await fetch("/api/settings", {
+          method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(collectSettings())
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "저장하지 못했습니다.");
+        showToast("저장했습니다.");
+        await loadSettings();
+        loadServerHealth();
+        if (data.postiz_restart_needed) {
+          $("saveSettingsResult").className = "set-result bad";
+          $("saveSettingsResult").textContent = "X·인스타 앱 키를 바꿨습니다. 「Postiz 다시 시작」을 눌러야 적용됩니다.";
+        }
+      } catch (err) {
+        out.className = "set-result bad";
+        out.textContent = err.message;
+      } finally {
+        if ($("saveSettingsBtn")) $("saveSettingsBtn").disabled = false;
+      }
+    }
+
+    async function testSetting(btn) {
+      const service = btn.dataset.test;
+      const out = document.querySelector(`[data-result="${btn.closest(".set-group").dataset.group}"]`);
+      const pending = collectSettings();
+      if (Object.keys(pending).some(k => document.querySelector(`[data-setting="${k}"]`).closest(".set-group") === btn.closest(".set-group"))) {
+        out.className = "set-result bad";
+        out.textContent = "먼저 아래 「저장」을 누른 뒤 확인하세요.";
+        return;
+      }
+      btn.disabled = true;
+      out.className = "set-result";
+      out.textContent = "확인 중";
+      try {
+        const res = await fetch(`/api/settings/test/${service}`, { method: "POST" });
+        const data = await res.json();
+        out.className = `set-result ${data.ok ? "ok" : "bad"}`;
+        out.textContent = data.message || data.detail || "";
+      } catch (err) {
+        out.className = "set-result bad";
+        out.textContent = "확인하지 못했습니다.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function restartPostiz() {
+      const btn = $("restartPostizBtn");
+      const out = document.querySelector('[data-result="postiz"]');
+      btn.disabled = true;
+      out.className = "set-result";
+      out.textContent = "다시 시작하는 중 (1~2분)";
+      try {
+        const res = await fetch("/api/settings/restart-postiz", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "다시 시작하지 못했습니다.");
+        out.className = "set-result ok";
+        out.textContent = "다시 시작했습니다. 1~2분 뒤 Postiz를 열어 채널을 연결하세요.";
+      } catch (err) {
+        out.className = "set-result bad";
+        out.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
 
     document.addEventListener("click", (e) => {
       const box = $("connBox");
@@ -596,6 +776,12 @@
         const res = await fetch("/api/health");
         const data = await res.json();
         const cfg = data.integrations_configured || {};
+        storeBrand = (data.channel_defaults || {}).store_brand || storeBrand;
+        if (!cfg.gemini && !firstRunShown) {
+          firstRunShown = true;
+          activateTab("settings");
+          showToast("처음 쓰시나요? 설정에서 Gemini API 키부터 입력하세요.");
+        }
         const items = [
           { label: "글 생성 (Gemini)", ok: cfg.gemini, required: true },
           { label: "인스타그램 · X 전송 (Postiz)", ok: cfg.postiz },
@@ -604,7 +790,7 @@
         ];
         panel.innerHTML = items.map(it =>
           `<div class="conn-row ${it.ok ? "ok" : ""}"><span>${it.label}</span><span>${it.ok ? "연결됨" : "미설정"}</span></div>`
-        ).join("");
+        ).join("") + `<div class="conn-row"><button type="button" class="btn btn-sm" onclick="activateTab('settings'); $('connBox').open = false;">설정 열기</button><span></span></div>`;
         const missing = items.filter(it => !it.ok).length;
         const dot = $("connDot");
         if (!cfg.gemini) {
@@ -1027,7 +1213,7 @@
         subtitle_banner: currentSession?.vision_result?.primary_subject || "OFFICIAL NOTICE",
         boxes: [],
         footnotes: [],
-        footer_brand: (appliedProfile && appliedProfile.account_handle) || "OFFICIAL TCG STORE",
+        footer_brand: (appliedProfile && appliedProfile.account_handle) || storeBrand,
         theme: "cyber_cyan"
       };
       const boxesText = (cardNews.boxes || []).map(b => `${b.label} : ${b.value}`).join("\n");
@@ -1496,7 +1682,7 @@
         subtitle_banner: getCardVal("subtitle_banner").trim() || "OFFICIAL NOTICE",
         boxes: boxes.slice(0, 6),
         footnotes: footnotes,
-        footer_brand: getCardVal("footer_brand").trim() || "OFFICIAL TCG STORE",
+        footer_brand: getCardVal("footer_brand").trim() || storeBrand,
         theme: getCardVal("theme") || "cyber_cyan"
       };
 

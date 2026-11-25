@@ -50,7 +50,8 @@ class AppSettings(BaseModel):
 
     telegram_bot_token: str = Field(default="")
     telegram_chat_id: str = Field(default="")
-    dcinside_default_gallery: str = Field(default="gadget")
+    dcinside_default_gallery: str = Field(default="")
+    store_name: str = Field(default="")
     enable_local_clipboard: bool = Field(default=True)
 
     @property
@@ -122,8 +123,8 @@ def load_app_settings(dotenv_path: Path | str | None = None) -> AppSettings:
         naver_cafe_menu_id=menu_id,
         telegram_bot_token=os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
         telegram_chat_id=os.getenv("TELEGRAM_CHAT_ID", "").strip(),
-        dcinside_default_gallery=os.getenv("DCINSIDE_DEFAULT_GALLERY", "gadget").strip()
-        or "gadget",
+        dcinside_default_gallery=os.getenv("DCINSIDE_DEFAULT_GALLERY", "").strip(),
+        store_name=os.getenv("STORE_NAME", "").strip(),
         enable_local_clipboard=enable_clipboard,
     )
 
@@ -200,4 +201,16 @@ def apply_naver_cafe_target(spec: Any, settings: AppSettings) -> None:
     spec.club_id = club_id
     if settings.naver_cafe_menu_id > 0:
         spec.menu_id = settings.naver_cafe_menu_id
+
+
+def apply_dcinside_gallery(spec: Any, settings: AppSettings) -> None:
+    """Use the store's own gallery from settings instead of the persona default, when set."""
+    gallery = settings.dcinside_default_gallery.strip()
+    if spec is not None and gallery:
+        spec.gallery_id = gallery
+
+
+def store_brand_label(settings: AppSettings) -> str:
+    """Brand line shown at the bottom of notice cards."""
+    return settings.store_name.strip() or "OFFICIAL TCG STORE"
 

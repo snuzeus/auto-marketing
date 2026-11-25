@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
 from src.agents.copy_agent import CopyAgent
+from src.web.settings_api import build_router as build_settings_router
 from src.agents.style_agent import (
     DEFAULT_STYLE_PROFILES_PATH,
     StyleAnalyzerAgent,
@@ -28,7 +29,9 @@ from src.core.card_renderer import build_default_card_news_spec, render_notice_c
 from src.core.config_loader import (
     ALL_SUPPORTED_CHANNELS,
     AppSettings,
+    apply_dcinside_gallery,
     apply_naver_cafe_target,
+    store_brand_label,
     load_app_settings,
     load_personas_config,
     load_personas_raw,
@@ -265,6 +268,7 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
     app.state.store = app_store
 
     app_store.upload_dir.mkdir(parents=True, exist_ok=True)
+    app.include_router(build_settings_router())
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -296,6 +300,7 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
                 "local_clipboard": settings.enable_local_clipboard,
             },
             "channel_defaults": {
+                "store_brand": store_brand_label(settings),
                 "dcinside_gallery": settings.dcinside_default_gallery,
                 "naver_cafe_club_id": settings.naver_cafe_club_id or "12345678",
                 "naver_cafe_menu_id": settings.naver_cafe_menu_id or 42,
@@ -502,6 +507,7 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
             ) from exc
 
         apply_naver_cafe_target(post_output.naver_cafe, app_store.get_settings())
+        apply_dcinside_gallery(post_output.dcinside, app_store.get_settings())
 
         drafts: dict[ChannelType, ChannelDraftState] = {}
         for ch in enabled_channels:
@@ -655,6 +661,13 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
             if isinstance(prev, NaverCafePostSpec) and prev.club_id != "12345678":
                 new_spec.club_id, new_spec.menu_id = prev.club_id, prev.menu_id
 
+        if isinstance(new_spec, DCInsidePostSpec):
+            prev_dc = session.drafts[channel].spec if channel in session.drafts else None
+            if isinstance(prev_dc, DCInsidePostSpec) and prev_dc.gallery_id:
+                new_spec.gallery_id = prev_dc.gallery_id  # 직접 고친 갤러리 유지
+            else:
+                apply_dcinside_gallery(new_spec, app_store.get_settings())
+
         ch_failures = validate_single_channel_deterministic(channel, new_spec, personas_cfg)
         report = ValidationReport(
             is_valid=len(ch_failures) == 0,
@@ -764,7 +777,7 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
             subtitle_banner=payload.subtitle_banner.strip() or "OFFICIAL NOTICE",
             boxes=cleaned_boxes[:6],
             footnotes=[f.strip() for f in payload.footnotes if f.strip()][:3],
-            footer_brand=payload.footer_brand.strip() or "OFFICIAL TCG STORE",
+            footer_brand=payload.footer_brand.strip() or store_brand_label(app_store.get_settings()),
             theme=payload.theme,
         )
 
@@ -1042,7 +1055,7 @@ def _resolve_channel_brand_label(
     channel: ChannelType,
     store: CampaignStore,
 ) -> str:
-    brand_label = "OFFICIAL TCG STORE"
+    brand_label = store_brand_label(store.get_settings())
     style_id = session.selected_style_ids.get(channel)
     if style_id:
         profile = store.style_manager.get_profile(style_id)

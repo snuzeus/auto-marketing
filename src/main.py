@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from src.agents.vision_agent import VisionAgent
 from src.core.card_renderer import render_notice_card_png
 from src.core.config_loader import (
     AppSettings,
+    apply_dcinside_gallery,
     apply_naver_cafe_target,
     load_app_settings,
     load_personas_config,
@@ -173,6 +175,7 @@ async def run_pipeline(
     )
 
     apply_naver_cafe_target(post_output.naver_cafe, app_settings)
+    apply_dcinside_gallery(post_output.dcinside, app_settings)
     post_output = apply_cli_overrides_to_output(
         post_output,
         gallery=gallery,
@@ -252,7 +255,12 @@ async def run_pipeline(
     return post_output, report, executed_calls
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
 def main(argv: list[str] | None = None) -> int:
+    # 설정·이력·업로드 경로가 모두 프로젝트 폴더 기준이므로, 어디서 실행해도 같은 파일을 쓰게 한다.
+    os.chdir(PROJECT_ROOT)
     parser = build_arg_parser()
     args = parser.parse_args(argv)
 
