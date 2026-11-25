@@ -19,7 +19,6 @@ from src.core.schema import (
     ChannelType,
     DCInsidePostSpec,
     InstagramPostSpec,
-    KakaoChannelPostSpec,
     MultilingualTagSet,
     NaverCafePostSpec,
     NaverPlacePostSpec,
@@ -223,24 +222,6 @@ def validate_single_channel_deterministic(
         _check_forbidden_words(
             channel="naver_cafe",
             text=f"{spec.subject}\n{spec.plain_body_preview}\n{spec.html_body}",
-            forbidden_words=forbidden_words,
-            failures=failures,
-        )
-
-    elif channel == "kakao_channel" and isinstance(spec, KakaoChannelPostSpec):
-        max_body = int(ch_cfg.get("max_body_length", 400))
-        if len(spec.body) > max_body:
-            failures.append(
-                ValidationFailureDetail(
-                    channel="kakao_channel",
-                    rule_violated="max_body_length",
-                    reason=f"카카오톡 채널 본문이 {len(spec.body)}자로 최대 기준({max_body}자)을 초과했습니다.",
-                    fix_instruction=f"본문을 {max_body}자 이하로 간결하게 요약하십시오.",
-                )
-            )
-        _check_forbidden_words(
-            channel="kakao_channel",
-            text=f"{spec.title}\n{spec.body}",
             forbidden_words=forbidden_words,
             failures=failures,
         )

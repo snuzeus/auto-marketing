@@ -13,7 +13,6 @@ ChannelType = Literal[
     "x_twitter",
     "dcinside",
     "naver_cafe",
-    "kakao_channel",
     "naver_place",
 ]
 ThinkingLevelType = Literal["low", "medium", "high"]
@@ -23,7 +22,6 @@ ALL_SUPPORTED_CHANNELS: tuple[ChannelType, ...] = (
     "x_twitter",
     "dcinside",
     "naver_cafe",
-    "kakao_channel",
     "naver_place",
 )
 

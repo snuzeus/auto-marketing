@@ -10,7 +10,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.agents.copy_agent import CopyAgent
 from src.agents.style_agent import (
@@ -54,10 +54,10 @@ from src.core.schema import (
     ChannelType,
     DCInsidePostSpec,
     InstagramPostSpec,
-    KakaoChannelPostSpec,
     MultilingualTagSet,
     NaverCafePostSpec,
     NaverPlacePostSpec,
+    REMOVED_CHANNELS,
     NoticeCategoryType,
     ValidationFailureDetail,
     ValidationReport,
@@ -91,6 +91,23 @@ class CampaignSession(BaseModel):
     dispatch_results: dict[ChannelType, dict[str, Any]] = Field(default_factory=dict)
     postiz_media_id: str | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def drop_removed_channels(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        cleaned = dict(data)
+        if isinstance(cleaned.get("enabled_channels"), list):
+            cleaned["enabled_channels"] = [
+                c for c in cleaned["enabled_channels"] if c not in REMOVED_CHANNELS
+            ]
+        for key in ("selected_style_ids", "drafts", "dispatch_results"):
+            if isinstance(cleaned.get(key), dict):
+                cleaned[key] = {
+                    k: v for k, v in cleaned[key].items() if k not in REMOVED_CHANNELS
+                }
+        return cleaned
+
 
 class InstagramUpdatePayload(BaseModel):
     hook_headline: str
@@ -117,12 +134,6 @@ class NaverCafeUpdatePayload(BaseModel):
     html_body: str
     plain_body_preview: str
     search_tags: list[str]
-
-
-class KakaoChannelUpdatePayload(BaseModel):
-    title: str
-    body: str
-    button_label: str = "매장 공지 자세히 보기"
 
 
 class NaverPlaceUpdatePayload(BaseModel):
@@ -859,16 +870,10 @@ def create_app(store: CampaignStore | None = None) -> FastAPI:
                         "image_path": session.image_path,
                     },
                 )
-            elif channel in ("kakao_channel", "naver_place") and isinstance(
-                spec, (KakaoChannelPostSpec, NaverPlacePostSpec)
-            ):
+            elif channel == "naver_place" and isinstance(spec, NaverPlacePostSpec):
                 import pyperclip
 
-                text_to_copy = (
-                    spec.full_message
-                    if isinstance(spec, KakaoChannelPostSpec)
-                    else spec.full_news
-                )
+                text_to_copy = spec.full_news
                 copied = False
                 if app_store.get_settings().enable_local_clipboard:
                     try:
@@ -963,15 +968,6 @@ def _parse_channel_update_payload(
         )
         return spec_dc, failures
 
-    if channel == "kakao_channel":
-        upd_kakao = KakaoChannelUpdatePayload.model_validate(payload)
-        spec_kakao = KakaoChannelPostSpec.model_construct(
-            title=upd_kakao.title,
-            body=upd_kakao.body,
-            button_label=upd_kakao.button_label,
-        )
-        return spec_kakao, failures
-
     if channel == "naver_place":
         upd_place = NaverPlaceUpdatePayload.model_validate(payload)
         spec_place = NaverPlacePostSpec.model_construct(
@@ -1034,7 +1030,7 @@ def _extract_channel_card_headline_and_body(
     elif isinstance(spec, NaverCafePostSpec):
         headline = f"{spec.head_tag} {spec.subject}"
         body_text = spec.plain_body_preview
-    elif isinstance(spec, (KakaoChannelPostSpec, NaverPlacePostSpec)):
+    elif isinstance(spec, NaverPlacePostSpec):
         headline = spec.title
         body_text = spec.body
 

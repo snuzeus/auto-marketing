@@ -20,7 +20,6 @@ from src.core.schema import (
     DCInsidePostSpec,
     ImageMetadata,
     InstagramPostSpec,
-    KakaoChannelPostSpec,
     MultilingualTagSet,
     NaverCafePostSpec,
     NaverPlacePostSpec,
@@ -507,7 +506,6 @@ def test_account_style_learning_and_injection_in_campaign(tmp_path: Path) -> Non
     assert hist_items[0]["primary_subject"] == "11월 18일 매장 임시 휴무 공지 포스터"
 
     # Confirm new channel models
-    assert KakaoChannelPostSpec is not None
     assert NaverPlacePostSpec is not None
 
 

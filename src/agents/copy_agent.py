@@ -224,8 +224,6 @@ def build_gemini_copywriter_request(
         "카페 회원들에게 안내하는 정중하고 상세한 공지문으로 작성하십시오. "
         "`html_body`와 `plain_body_preview`는 최소 300자 이상으로 작성하며 `search_tags`에는 `#`을 뺀 "
         "키워드 5~10개를 넣으십시오.\n"
-        "- `kakao_channel` 활성화 시: 모바일 카톡방에서 한눈에 읽히도록 `title`(35자 이하), `body`(400자 이하 핵심 요약), "
-        "`button_label`(하단 액션 버튼명)을 작성하십시오.\n"
         "- `naver_place` 활성화 시: 네이버 스마트플레이스 새소식 탭 방문객을 위해 `title`(35자 이하), "
         "`body`(500자 이하 친절한 매장 안내), `keywords`(지역/종목 키워드 3~5개)를 작성하십시오.\n"
         "</OUTPUT_FORMAT>"

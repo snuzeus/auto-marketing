@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from src.core.llm_client import GeminiLLMClient
-from src.core.schema import AccountStyleProfile, ChannelType
+from src.core.schema import REMOVED_CHANNELS, AccountStyleProfile, ChannelType
 
 DEFAULT_STYLE_PROFILES_PATH = Path("config/style_profiles.json")
 
@@ -39,7 +39,11 @@ class StyleProfileManager:
             return []
         if not isinstance(raw_list, list):
             return []
-        profiles = [AccountStyleProfile.model_validate(item) for item in raw_list]
+        profiles = [
+            AccountStyleProfile.model_validate(item)
+            for item in raw_list
+            if item.get("platform") not in REMOVED_CHANNELS
+        ]
         if platform is not None:
             return [p for p in profiles if p.platform == platform]
         return profiles

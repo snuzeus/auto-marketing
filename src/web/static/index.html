@@ -386,8 +386,6 @@
                   <select id="style-select-dcinside" aria-label="디시인사이드 글쓰기 스타일"><option value="">기본 스타일</option></select>
                 </div>
                 <div class="channel-row">
-                  <label><input type="checkbox" name="channel" value="kakao_channel" checked /> 카카오톡 채널</label>
-                  <select id="style-select-kakao_channel" aria-label="카카오톡 채널 글쓰기 스타일"><option value="">기본 스타일</option></select>
                 </div>
                 <div class="channel-row">
                   <label><input type="checkbox" name="channel" value="naver_place" checked /> 네이버 플레이스</label>
@@ -443,7 +441,6 @@
                   <option value="x_twitter">X</option>
                   <option value="naver_cafe">네이버 카페</option>
                   <option value="dcinside">디시인사이드</option>
-                  <option value="kakao_channel">카카오톡 채널</option>
                   <option value="naver_place">네이버 플레이스</option>
                 </select>
               </div>
@@ -498,7 +495,6 @@
       x_twitter: "X",
       dcinside: "디시인사이드",
       naver_cafe: "네이버 카페",
-      kakao_channel: "카카오톡 채널",
       naver_place: "네이버 플레이스"
     };
 
@@ -534,7 +530,7 @@
       ["violet_purple", "퍼플"]
     ];
 
-    const BODY_LIMITS = { kakao_channel: 400, naver_place: 500 };
+    const BODY_LIMITS = { naver_place: 500 };
 
     let currentSession = null;
     let learnedProfiles = [];
@@ -1237,8 +1233,6 @@
         text = `[제목] ${p.title}\n\n${p.body}`;
       } else if (channel === "naver_cafe") {
         text = `${p.head_tag} ${p.subject}\n\n${p.plain_body_preview}\n\n태그: ${(p.search_tags || []).join(", ")}`;
-      } else if (channel === "kakao_channel") {
-        text = `[${p.title}]\n\n${p.body}\n\n${p.button_label}`;
       } else if (channel === "naver_place") {
         text = `${p.title}\n\n${p.body}\n\n키워드: ${(p.keywords || []).join(", ")}`;
       }
@@ -1297,23 +1291,6 @@
           <div class="field">
             <div class="field-label"><label>본문</label><span class="hint">반말, 이모지 없이</span></div>
             <textarea data-field="body" rows="9">${escapeHtml(spec.body)}</textarea>
-          </div>
-        `;
-      }
-      if (channel === "kakao_channel") {
-        return `
-          <div class="field">
-            <div class="field-label"><label>제목</label><span class="hint">35자까지</span></div>
-            <input type="text" data-field="title" value="${escapeAttr(spec.title)}" />
-          </div>
-          <div class="field">
-            <label>본문</label>
-            <textarea data-field="body" rows="9">${escapeHtml(spec.body)}</textarea>
-            <div class="counter" data-counter></div>
-          </div>
-          <div class="field">
-            <label>버튼 문구</label>
-            <input type="text" data-field="button_label" value="${escapeAttr(spec.button_label)}" />
           </div>
         `;
       }
@@ -1392,9 +1369,6 @@
       }
       if (channel === "dcinside") {
         return { gallery_id: getVal("gallery_id"), title: getVal("title"), body: getVal("body") };
-      }
-      if (channel === "kakao_channel") {
-        return { title: getVal("title"), body: getVal("body"), button_label: getVal("button_label") };
       }
       if (channel === "naver_place") {
         return {

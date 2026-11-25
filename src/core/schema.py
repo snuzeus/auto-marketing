@@ -11,15 +11,15 @@ ChannelType = Literal[
     "x_twitter",
     "dcinside",
     "naver_cafe",
-    "kakao_channel",
     "naver_place",
 ]
+# 지원을 중단한 채널. 예전에 저장한 이력과 스타일 프로필을 읽을 때 걸러낸다.
+REMOVED_CHANNELS: frozenset[str] = frozenset({"kakao_channel"})
 ALL_CHANNELS_LIST: tuple[ChannelType, ...] = (
     "instagram",
     "x_twitter",
     "dcinside",
     "naver_cafe",
-    "kakao_channel",
     "naver_place",
 )
 DraftApprovalStatus = Literal["draft", "approved"]
@@ -243,19 +243,6 @@ class NaverCafePostSpec(BaseModel):
         return self
 
 
-class KakaoChannelPostSpec(BaseModel):
-    title: str = Field(max_length=35, description="카카오톡 채널 메시지 상단 핵심 제목")
-    body: str = Field(description="모바일 채팅창 가독성에 최적화된 400자 이내 공지 요약 본문")
-    button_label: str = Field(
-        default="매장 공지 자세히 보기",
-        description="카카오톡 채널 하단 액션 버튼 문구",
-    )
-
-    @property
-    def full_message(self) -> str:
-        return f"[{self.title}]\n\n{self.body}\n\n🔗 버튼: {self.button_label}".strip()
-
-
 class NaverPlacePostSpec(BaseModel):
     title: str = Field(max_length=35, description="네이버 스마트플레이스 새소식 제목")
     body: str = Field(description="방문객에게 신뢰감을 주는 500자 이내 매장 소식 본문")
@@ -278,7 +265,6 @@ class SocialPostOutput(BaseModel):
     x_twitter: XTwitterPostSpec | None = None
     dcinside: DCInsidePostSpec | None = None
     naver_cafe: NaverCafePostSpec | None = None
-    kakao_channel: KakaoChannelPostSpec | None = None
     naver_place: NaverPlacePostSpec | None = None
     generation_reasoning: str = Field(description="활성 채널별 페르소나 및 피드백 반영 요약")
 
@@ -303,7 +289,6 @@ class ValidationFailureDetail(BaseModel):
         "x_twitter",
         "dcinside",
         "naver_cafe",
-        "kakao_channel",
         "naver_place",
         "schema",
     ]
@@ -326,7 +311,6 @@ ChannelDraftSpec = (
     | XTwitterPostSpec
     | DCInsidePostSpec
     | NaverCafePostSpec
-    | KakaoChannelPostSpec
     | NaverPlacePostSpec
 )
 

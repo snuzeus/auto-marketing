@@ -3,7 +3,7 @@ version: "3.1"
 default_brand_voice: "전문적이면서 친근하고 소통 지향적인 TCG(트레이딩 카드 게임) 공인 매장 매니저"
 
 # 기본 실행 시 글을 생성 및 발행할 타겟 플랫폼 목록
-# 지원 플랫폼 식별자: "instagram", "x_twitter", "dcinside", "naver_cafe", "kakao_channel", "naver_place"
+# 지원 플랫폼 식별자: "instagram", "x_twitter", "dcinside", "naver_cafe", "naver_place"
 active_channels:
   - "instagram"
   - "x_twitter"
@@ -120,17 +120,6 @@ channels:
       - "오픈채팅"
       - "무료 나눔 이벤트"
       - "원고료를 제공받아"
-
-  kakao_channel:
-    enabled: true
-    max_body_length: 400
-    style_guidelines:
-      - "카카오톡 채널 단체 메시지(친구톡/소식) 규격에 맞춰 모바일 채팅방에서 한눈에 읽히도록 간결하게 작성할 것"
-      - "상단 제목(최대 30자)에 핵심 일정이나 종목을 명시하고, 본문은 이모지 글머리기호와 짧은 줄바꿈으로 핵심 정보(일시/참가비/구매제한)만 요약할 것"
-      - "하단에 버튼 문구(예: '대회 상세 안내 보기', '매장 위치 확인')를 자연스럽게 연결할 것"
-    forbidden_words:
-      - "무조건 당첨"
-      - "스팸"
 
   naver_place:
     enabled: true

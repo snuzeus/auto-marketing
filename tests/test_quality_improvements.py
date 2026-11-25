@@ -361,3 +361,39 @@ def test_naver_cafe_head_tag_is_not_duplicated() -> None:
     assert encoded["raw_subject"] == "[입고공지] 번들"
     other = NaverCafeClient.build_encoded_fields("[입고공지]", "[한정] 번들", "<p>x</p>", [])
     assert other["raw_subject"] == "[입고공지] [한정] 번들"
+
+
+def test_old_history_with_removed_channel_still_loads() -> None:
+    from src.web.app import CampaignSession
+
+    session = CampaignSession.model_validate(
+        {
+            "session_id": "old",
+            "image_path": "x.jpg",
+            "image_filename": "x.jpg",
+            "user_prompt": "공지",
+            "enabled_channels": ["x_twitter", "kakao_channel"],
+            "selected_style_ids": {"kakao_channel": "p"},
+            "vision_result": {
+                "primary_subject": "s",
+                "visual_mood": [],
+                "key_selling_points": ["a", "b"],
+                "extracted_text": [],
+                "suggested_alt_text": "a",
+                "image_meta": {
+                    "file_path": "x.jpg",
+                    "width": 800,
+                    "height": 1000,
+                    "aspect_ratio_float": 0.8,
+                    "aspect_ratio_label": "4:5",
+                    "is_instagram_compatible": True,
+                },
+            },
+            "tag_set": {},
+            "generation_reasoning": "r",
+            "drafts": {"kakao_channel": {"channel": "kakao_channel"}},
+            "dispatch_results": {"kakao_channel": {}},
+        }
+    )
+    assert session.enabled_channels == ["x_twitter"]
+    assert not session.drafts and not session.selected_style_ids and not session.dispatch_results

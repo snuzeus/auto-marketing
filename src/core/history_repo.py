@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from src.core.schema import REMOVED_CHANNELS
+
 DEFAULT_DB_PATH = Path("config/campaigns_history.db")
 
 
@@ -126,7 +128,7 @@ class CampaignSQLiteRepository:
                     notice_category=str(r[2]),
                     user_prompt=str(r[3]),
                     primary_subject=str(r[4]),
-                    enabled_channels=ch_list,
+                    enabled_channels=[c for c in ch_list if c not in REMOVED_CHANNELS],
                 )
             )
         return results
